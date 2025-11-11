@@ -1,7 +1,9 @@
 import streamlit as st
 import pandas as pd
-import os
 from datetime import datetime
+import gspread
+from google.oauth2.service_account import Credentials
+import json
 
 # Hidden treatment code
 treatment_code = "36c0c05b"
@@ -106,8 +108,6 @@ translations = {
 
 # Use selected language
 t = translations[language]
-
-# UI
 st.title(t["title"])
 
 # Initialize session state
@@ -120,7 +120,6 @@ question_keys = [
     "informed_about_procedures",
     "team_responsiveness",
     "motivation_factors", "motivation_other",
-
 ]
 
 for key in question_keys:
@@ -149,8 +148,7 @@ st.multiselect(t["q8"], t["q8_options"], key="motivation_factors")
 if "Other" in st.session_state.motivation_factors or "Otro" in st.session_state.motivation_factors or "Sonstiges" in st.session_state.motivation_factors:
     st.text_input(t["q8_other"], key="motivation_other")
 
-
-# Submit button
+# Submit
 if st.button(t["submit"]):
     required_keys = [
         "new_symptoms", "side_effects_manageability", "support_feeling",
@@ -178,67 +176,35 @@ if st.button(t["submit"]):
             "TeamResponsiveness": st.session_state.team_responsiveness,
             "MotivationFactors": ", ".join(st.session_state.motivation_factors),
             "Other": st.session_state.motivation_other,
-
         }
 
-import gspread
-from google.oauth2.service_account import Credentials
-import json
+        try:
+            # Load secrets from Streamlit Cloud
+            gcp = st.secrets["gcp"]
+            service_account_info = json.loads(gcp["service_account"])
 
-# Load secrets from Streamlit Cloud
-gcp = st.secrets["gcp"]
+            SCOPES = [
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive"
+            ]
+            creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
+            gc = gspread.authorize(creds)
+            sheet = gc.open_by_key(gcp["sheet_id"]).sheet1
 
-# Parse JSON key
-service_account_info = json.loads(gcp["service_account"])
+            # Append response to Google Sheet
+            sheet.append_row(list(response.values()))
 
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
-creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
-gc = gspread.authorize(creds)
-
-# Open your Google Sheet
-sheet = gc.open_by_key(gcp["sheet_id"]).sheet1
-
-try:
-    # Convert response dict to row
-    row_data = list(response.values())
-    sheet.append_row(row_data)
-    st.session_state.feedback_submitted = True
-
+            st.session_state.feedback_submitted = True
             for key in question_keys:
                 if key in st.session_state:
                     del st.session_state[key]
-
             st.rerun()
 
         except Exception as e:
             import traceback
             st.error(f"{t['error']} {e}")
-            st.text("Detailed error:")
             st.text(traceback.format_exc())
 
 if st.session_state.get("feedback_submitted"):
     st.success(t["success"])
     del st.session_state["feedback_submitted"]
-
-import os
-from openpyxl import load_workbook
-
-folder_path = r"C:\Users\Sujeeth kumar\Desktop\New folder"
-file_path = os.path.join(folder_path, "Feedback.xlsx")
-
-if os.path.exists(file_path):
-    wb = load_workbook(file_path)
-    ws = wb.active
-
-    for column_cells in ws.columns:
-        length = max(len(str(cell.value)) if cell.value else 0 for cell in column_cells)
-        column_letter = column_cells[0].column_letter
-        ws.column_dimensions[column_letter].width = length + 2  # Add padding
-
-    wb.save(file_path)
-
-
-
