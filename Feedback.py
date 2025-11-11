@@ -181,20 +181,31 @@ if st.button(t["submit"]):
 
         }
 
-        folder_path = r"C:\Users\Sujeeth kumar\Desktop\New folder"
-        os.makedirs(folder_path, exist_ok=True)
-        file_path = os.path.join(folder_path, "Feedback.xlsx")
+import gspread
+from google.oauth2.service_account import Credentials
+import json
 
-        try:
-            if os.path.exists(file_path):
-                df = pd.read_excel(file_path, engine='openpyxl')
-                df = pd.concat([df, pd.DataFrame([response])], ignore_index=True)
-            else:
-                df = pd.DataFrame([response])
+# Load secrets from Streamlit Cloud
+gcp = st.secrets["gcp"]
 
-            df.to_excel(file_path, index=False, engine='openpyxl')
+# Parse JSON key
+service_account_info = json.loads(gcp["service_account"])
 
-            st.session_state.feedback_submitted = True
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
+gc = gspread.authorize(creds)
+
+# Open your Google Sheet
+sheet = gc.open_by_key(gcp["sheet_id"]).sheet1
+
+try:
+    # Convert response dict to row
+    row_data = list(response.values())
+    sheet.append_row(row_data)
+    st.session_state.feedback_submitted = True
 
             for key in question_keys:
                 if key in st.session_state:
