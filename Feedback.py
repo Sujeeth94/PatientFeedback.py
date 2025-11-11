@@ -188,7 +188,7 @@ if st.button(t["submit"]):
                 "https://www.googleapis.com/auth/drive"
             ]
             creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
-            gc = gspread.authorize(creds)
+            gc = gspread.service_account(filename="service_account.json")
             sheet = gc.open_by_key(gcp["sheet_id"]).sheet1
 
             # Append response to Google Sheet
