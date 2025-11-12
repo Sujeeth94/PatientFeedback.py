@@ -178,20 +178,33 @@ if st.button(t["submit"]):
 
         try:
             sheet.append_row(response)
-            st.success(t["success"])
 
-            # ✅ Clear form fields safely
-            for key in [
-                "new_symptoms", "new_symptoms_desc", "side_effects_manageability", "support_feeling",
-                "daily_tasks_impact", "activities_avoided", "activities_avoided_desc",
-                "informed_about_procedures", "team_responsiveness", "motivation_factors",
-                "motivation_other", "considered_dropping", "considered_reason"
-            ]:
-                if key in st.session_state:
-                    del st.session_state[key]
+            # ✅ Mark submission flag
+            st.session_state["form_submitted"] = True
 
-            st.toast(t["success"], icon="✅")
-            st.rerun()
+        except Exception as e:
+            st.error(f"{t['error']} {e}")
+            st.text(traceback.format_exc())
+
+# ✅ After button block — handle post-submit UI
+if st.session_state.get("form_submitted"):
+    st.success(t["success"])
+    st.toast(t["success"], icon="✅")
+
+    # ✅ Clear only relevant keys
+    for key in [
+        "new_symptoms", "new_symptoms_desc", "side_effects_manageability", "support_feeling",
+        "daily_tasks_impact", "activities_avoided", "activities_avoided_desc",
+        "informed_about_procedures", "team_responsiveness", "motivation_factors",
+        "motivation_other", "considered_dropping", "considered_reason"
+    ]:
+        if key in st.session_state:
+            del st.session_state[key]
+
+    # ✅ Remove flag and refresh
+    del st.session_state["form_submitted"]
+    st.rerun()
+
 
         except Exception as e:
             st.error(f"{t['error']} {e}")
