@@ -1,7 +1,5 @@
 import streamlit as st
 from datetime import datetime
-import io
-import csv
 
 # ----------------------------
 # Hidden treatment code
@@ -150,7 +148,7 @@ if any(x in st.session_state.motivation_factors for x in ["Other", "Otro", "Sons
     st.text_input(t["q8_other"], key="motivation_other")
 
 # ----------------------------
-# Submit feedback
+# Submit feedback (keep response in memory only)
 # ----------------------------
 if st.button(t["submit"]):
     response = {
@@ -171,25 +169,7 @@ if st.button(t["submit"]):
         "Other": st.session_state.motivation_other,
     }
 
-    # Display response dictionary
-    st.write("### Response Dictionary")
-    st.json(response)
-
-    # Convert to CSV and provide download
-    output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=response.keys())
-    writer.writeheader()
-    writer.writerow(response)
-    csv_string = output.getvalue()
-
-    st.download_button(
-        label="Download Response CSV",
-        data=csv_string,
-        file_name="feedback.csv",
-        mime="text/csv"
-    )
-
-    # Reset session state
+    # Reset session state for questions (response remains in memory)
     for key in question_keys:
         if key in st.session_state:
             del st.session_state[key]
