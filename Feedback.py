@@ -178,11 +178,13 @@ if st.button(t["submit"]):
             sheet.append_row(response)
             st.success(t["success"])
 
-            # ✅ Clear form inputs (keep language and client)
-            for key in list(st.session_state.keys()):
-                if key not in ["language", "client"]:
-                    del st.session_state[key]
-            st.rerun()  # Refresh app to clear selections
+            # ✅ Forcefully clear all session keys except language & client
+            preserved = {"language": st.session_state.language, "client": client}
+            st.session_state.clear()
+            st.session_state.update(preserved)
+
+            # ✅ Fully rerun app with cleared inputs
+            st.experimental_rerun()
 
         except Exception as e:
             st.error(f"{t['error']} {e}")
