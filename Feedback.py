@@ -155,8 +155,9 @@ if any(opt in st.session_state.motivation_factors for opt in ["Other", "Otro", "
 # -------------------------------
 # Google Sheets Setup
 # -------------------------------
-creds_dict = st.secrets["google"]
+
 scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+creds_dict = st.secrets["google"]
 creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
 gc = gspread.authorize(creds)
 sheet = gc.open("Feedback").sheet1  # first sheet
