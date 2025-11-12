@@ -144,9 +144,7 @@ if st.session_state.activities_avoided == t["q5_options"][0]:
 st.radio(t["q6"], t["q6_options"], index=None, key="informed_about_procedures")
 st.radio(t["q7"], t["q7_options"], index=None, key="team_responsiveness")
 st.multiselect(t["q8"], t["q8_options"], key="motivation_factors")
-if "Other" in st.session_state.motivation_factors or \
-   "Otro" in st.session_state.motivation_factors or \
-   "Andere" in st.session_state.motivation_factors:
+if any(opt in st.session_state.motivation_factors for opt in ["Other","Otro","Andere"]):
     st.text_input(t["q8_other"], key="motivation_other")
 
 # Submit
@@ -180,9 +178,9 @@ if st.button(t["submit"]):
         }
 
         try:
-            # Load GCP credentials from Streamlit secrets
-            gcp = st.secrets["gcp"]
-            service_account_info = json.loads(gcp["service_account"])
+            # Load service_account.json
+            with open("service_account.json") as f:
+                service_account_info = json.load(f)
 
             SCOPES = [
                 "https://www.googleapis.com/auth/spreadsheets",
@@ -190,7 +188,8 @@ if st.button(t["submit"]):
             ]
             creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
             gc = gspread.authorize(creds)
-            sheet = gc.open_by_key(gcp["sheet_id"]).sheet1
+            sheet_id = "10scAv-n4XfajdiMPvI0FrUUcYvUlP--izgcYCTeQg2M"
+            sheet = gc.open_by_key(sheet_id).sheet1
 
             # Append response
             sheet.append_row(list(response.values()))
