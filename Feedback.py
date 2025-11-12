@@ -1,5 +1,7 @@
 import streamlit as st
 from datetime import datetime
+import io
+import csv
 
 # ----------------------------
 # Hidden treatment code
@@ -151,38 +153,45 @@ if any(x in st.session_state.motivation_factors for x in ["Other", "Otro", "Sons
 # Submit feedback
 # ----------------------------
 if st.button(t["submit"]):
-    required_keys = [
-        "new_symptoms", "side_effects_manageability", "support_feeling",
-        "daily_tasks_impact", "activities_avoided", "informed_about_procedures",
-        "team_responsiveness", "motivation_factors"
-    ]
-    missing = [key for key in required_keys if st.session_state.get(key) in [None, ""]]
+    response = {
+        "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "Client": client,
+        "Treatment Code": treatment_code,
+        "Language": language,
+        "NewSymptoms": st.session_state.new_symptoms,
+        "NewSymptoms Description": st.session_state.new_symptoms_desc,
+        "SideEffectsManageability": st.session_state.side_effects_manageability,
+        "SupportFeeling": st.session_state.support_feeling,
+        "DailyTasksImpact": st.session_state.daily_tasks_impact,
+        "ActivitiesAvoided": st.session_state.activities_avoided,
+        "ActivitiesAvoided Description": st.session_state.activities_avoided_desc,
+        "InformedAboutProcedures": st.session_state.informed_about_procedures,
+        "TeamResponsiveness": st.session_state.team_responsiveness,
+        "MotivationFactors": ", ".join(st.session_state.motivation_factors),
+        "Other": st.session_state.motivation_other,
+    }
 
-    if missing:
-        st.warning(t["warning"])
-    else:
-        # Collect response (optional, just for local processing)
-        response = {
-            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Client": client,
-            "Treatment Code": treatment_code,
-            "Language": language,
-            "NewSymptoms": st.session_state.new_symptoms,
-            "NewSymptoms Description": st.session_state.new_symptoms_desc,
-            "SideEffectsManageability": st.session_state.side_effects_manageability,
-            "SupportFeeling": st.session_state.support_feeling,
-            "DailyTasksImpact": st.session_state.daily_tasks_impact,
-            "ActivitiesAvoided": st.session_state.activities_avoided,
-            "ActivitiesAvoided Description": st.session_state.activities_avoided_desc,
-            "InformedAboutProcedures": st.session_state.informed_about_procedures,
-            "TeamResponsiveness": st.session_state.team_responsiveness,
-            "MotivationFactors": ", ".join(st.session_state.motivation_factors),
-            "Other": st.session_state.motivation_other,
-        }
+    # Display response dictionary
+    st.write("### Response Dictionary")
+    st.json(response)
 
-        # Reset session state
-        for key in question_keys:
-            if key in st.session_state:
-                del st.session_state[key]
+    # Convert to CSV and provide download
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=response.keys())
+    writer.writeheader()
+    writer.writerow(response)
+    csv_string = output.getvalue()
 
-        st.success(t["success"])
+    st.download_button(
+        label="Download Response CSV",
+        data=csv_string,
+        file_name="feedback.csv",
+        mime="text/csv"
+    )
+
+    # Reset session state
+    for key in question_keys:
+        if key in st.session_state:
+            del st.session_state[key]
+
+    st.success(t["success"])
