@@ -174,7 +174,6 @@ if st.button(t["submit"]):
         if key in st.session_state:
             del st.session_state[key]
 
+    st.success(t["success"])
         # Force rerun to reset all widgets visually
     st.experimental_rerun()
-
-    st.success(t["success"])
