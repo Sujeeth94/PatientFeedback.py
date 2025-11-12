@@ -1,8 +1,8 @@
+import json
 import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
-import json
 
 # Hidden treatment code
 treatment_code = "36c0c05b"
@@ -144,67 +144,69 @@ if st.session_state.activities_avoided == t["q5_options"][0]:
 st.radio(t["q6"], t["q6_options"], index=None, key="informed_about_procedures")
 st.radio(t["q7"], t["q7_options"], index=None, key="team_responsiveness")
 st.multiselect(t["q8"], t["q8_options"], key="motivation_factors")
-if any(opt in st.session_state.motivation_factors for opt in ["Other","Otro","Andere"]):
+if "Other" in st.session_state.motivation_factors or \
+   "Otro" in st.session_state.motivation_factors or \
+   "Andere" in st.session_state.motivation_factors:
     st.text_input(t["q8_other"], key="motivation_other")
 
-# Submit
-if st.button(t["submit"]):
-    required_keys = [
-        "new_symptoms", "side_effects_manageability", "support_feeling",
-        "daily_tasks_impact", "activities_avoided", "informed_about_procedures",
-        "team_responsiveness", "motivation_factors"
-    ]
-    missing = [key for key in required_keys if st.session_state.get(key) in [None, ""]]
+# Upload Service Account JSON
+st.info("Upload your service_account.json")
+uploaded_file = st.file_uploader("Upload JSON key", type=["json"])
 
-    if missing:
-        st.warning(t["warning"])
-    else:
-        response = {
-            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Client": client,
-            "Treatment Code": treatment_code,
-            "Language": language,
-            "NewSymptoms": st.session_state.new_symptoms,
-            "NewSymptoms Description": st.session_state.new_symptoms_desc,
-            "SideEffectsManageability": st.session_state.side_effects_manageability,
-            "SupportFeeling": st.session_state.support_feeling,
-            "DailyTasksImpact": st.session_state.daily_tasks_impact,
-            "ActivitiesAvoided": st.session_state.activities_avoided,
-            "ActivitiesAvoided Description": st.session_state.activities_avoided_desc,
-            "InformedAboutProcedures": st.session_state.informed_about_procedures,
-            "TeamResponsiveness": st.session_state.team_responsiveness,
-            "MotivationFactors": ", ".join(st.session_state.motivation_factors),
-            "Other": st.session_state.motivation_other,
-        }
+# Google Sheets variables
+gc = None
+sheet = None
+sheet_id = "10scAv-n4XfajdiMPvI0FrUUcYvUlP--izgcYCTeQg2M"  # Your Sheet ID
 
-        try:
-            # Load service_account.json
-            with open("service_account.json") as f:
-                service_account_info = json.load(f)
+if uploaded_file is not None:
+    try:
+        service_account_info = json.load(uploaded_file)
+        SCOPES = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
+        creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
+        gc = gspread.authorize(creds)
+        sheet = gc.open_by_key(sheet_id).sheet1
+        st.success("Service account authenticated successfully!")
+    except Exception as e:
+        st.error(f"Failed to authenticate: {e}")
 
-            SCOPES = [
-                "https://www.googleapis.com/auth/spreadsheets",
-                "https://www.googleapis.com/auth/drive"
-            ]
-            creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
-            gc = gspread.authorize(creds)
-            sheet_id = "10scAv-n4XfajdiMPvI0FrUUcYvUlP--izgcYCTeQg2M"
-            sheet = gc.open_by_key(sheet_id).sheet1
-
-            # Append response
-            sheet.append_row(list(response.values()))
-
-            st.session_state.feedback_submitted = True
-            for key in question_keys:
-                if key in st.session_state:
-                    del st.session_state[key]
-            st.rerun()
-
-        except Exception as e:
-            import traceback
-            st.error(f"{t['error']} {e}")
-            st.text(traceback.format_exc())
-
-if st.session_state.get("feedback_submitted"):
-    st.success(t["success"])
-    del st.session_state["feedback_submitted"]
+# Submit button
+if sheet:
+    if st.button(t["submit"]):
+        required_keys = [
+            "new_symptoms", "side_effects_manageability", "support_feeling",
+            "daily_tasks_impact", "activities_avoided", "informed_about_procedures",
+            "team_responsiveness", "motivation_factors"
+        ]
+        missing = [key for key in required_keys if st.session_state.get(key) in [None, ""]]
+        if missing:
+            st.warning(t["warning"])
+        else:
+            response = {
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "Client": client,
+                "Treatment Code": treatment_code,
+                "Language": language,
+                "NewSymptoms": st.session_state.new_symptoms,
+                "NewSymptoms Description": st.session_state.new_symptoms_desc,
+                "SideEffectsManageability": st.session_state.side_effects_manageability,
+                "SupportFeeling": st.session_state.support_feeling,
+                "DailyTasksImpact": st.session_state.daily_tasks_impact,
+                "ActivitiesAvoided": st.session_state.activities_avoided,
+                "ActivitiesAvoided Description": st.session_state.activities_avoided_desc,
+                "InformedAboutProcedures": st.session_state.informed_about_procedures,
+                "TeamResponsiveness": st.session_state.team_responsiveness,
+                "MotivationFactors": ", ".join(st.session_state.motivation_factors),
+                "Other": st.session_state.motivation_other,
+            }
+            try:
+                sheet.append_row(list(response.values()))
+                st.session_state.feedback_submitted = True
+                for key in question_keys:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.success(t["success"])
+            except Exception as e:
+                st.error(f"{t['error']} {e}")
