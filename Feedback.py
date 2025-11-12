@@ -156,7 +156,6 @@ if st.button(t["submit"]):
         "team_responsiveness", "motivation_factors", "considered_dropping"
     ]
     missing = [k for k in required_keys if st.session_state.get(k) in [None, ""]]
-
     if missing:
         st.warning(t["warning"])
     else:
@@ -175,48 +174,16 @@ if st.button(t["submit"]):
             st.session_state.considered_dropping,
             st.session_state.get("considered_reason", "")
         ]
-
         try:
             sheet.append_row(response)
+            st.success(t["success"])
+             # ✅ Clear form inputs after successful submission
+            for key in list(st.session_state.keys()):
+                if key not in ["language", "client"]:
+                    del st.session_state[key]
+            st.rerun()
 
-            # ✅ Mark submission flag
-            st.session_state["form_submitted"] = True
 
         except Exception as e:
             st.error(f"{t['error']} {e}")
             st.text(traceback.format_exc())
-
-# ✅ After button block — handle post-submit UI
-if st.session_state.get("form_submitted"):
-    # Show success message once
-    st.success(t["success"])
-    st.toast(t["success"], icon="✅")
-
-    # Phase 1: clear all response keys
-    for key in [
-        "new_symptoms", "new_symptoms_desc", "side_effects_manageability", "support_feeling",
-        "daily_tasks_impact", "activities_avoided", "activities_avoided_desc",
-        "informed_about_procedures", "team_responsiveness", "motivation_factors",
-        "motivation_other", "considered_dropping", "considered_reason"
-    ]:
-        if key in st.session_state:
-            del st.session_state[key]
-
-    # Mark that we just cleared — this prevents instant rerun with stale state
-    st.session_state["just_cleared"] = True
-    del st.session_state["form_submitted"]
-    st.rerun()
-
-# ✅ Phase 2: run immediately after rerun to reset UI cleanly
-if st.session_state.get("just_cleared"):
-    # Remove the flag so this block only runs once
-    del st.session_state["just_cleared"]
-    st.experimental_set_query_params()  # optional: reset query params to clean URL
-
-
-
-
-
-
-
-
