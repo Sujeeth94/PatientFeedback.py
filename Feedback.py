@@ -2,6 +2,7 @@ import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
+import json
 
 # Hidden treatment code
 treatment_code = "36c0c05b"
@@ -13,7 +14,7 @@ client = query_params.get("client", "Unknown")
 # Language selector
 language = st.selectbox("Choose your language", ["English", "Spanish", "German"])
 
-# Translation dictionary (same as before)
+# Translation dictionary
 translations = {
     "English": {
         "title": "Clinical Trial Feedback Form",
@@ -43,8 +44,8 @@ translations = {
         "q9": "Have you considered dropping out at any point?",
         "q9_desc": "If yes, what made you reconsider?",
         "q9_options": ["Yes", "No"]
-    },
-    # Add Spanish and German translations here...
+    }
+    # Add Spanish and German translations here if needed
 }
 
 # Use selected language
@@ -120,18 +121,19 @@ if st.button(t["submit"]):
         }
 
         try:
-            # Load Google Sheets credentials from file in Streamlit Cloud secrets
+            # Load Google Sheets credentials from Streamlit secrets
+            gcp = st.secrets["gcp"]
+            service_account_info = json.loads(gcp["service_account"])
+
             SCOPES = [
                 "https://www.googleapis.com/auth/spreadsheets",
                 "https://www.googleapis.com/auth/drive"
             ]
-
-            creds = Credentials.from_service_account_file(
-                "service_account.json", scopes=SCOPES
-            )
+            creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
             gc = gspread.authorize(creds)
-            sheet = gc.open_by_key(st.secrets["gcp"]["sheet_id"]).sheet1
+            sheet = gc.open_by_key(gcp["sheet_id"]).sheet1
 
+            # Append response
             sheet.append_row(list(response.values()))
 
             st.session_state.feedback_submitted = True
