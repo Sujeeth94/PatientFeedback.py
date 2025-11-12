@@ -4,6 +4,7 @@ from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
 import traceback
+import json
 
 # -------------------------------
 # Hidden treatment code & client
@@ -109,29 +110,30 @@ translations = {
 t = translations[language]
 
 # -------------------------------
-# Session state initialization
+# Google Sheets setup (from secrets)
 # -------------------------------
-question_keys = [
-    "new_symptoms", "new_symptoms_desc",
-    "side_effects_manageability", "support_feeling",
-    "daily_tasks_impact", "activities_avoided", "activities_avoided_desc",
-    "informed_about_procedures", "team_responsiveness",
-    "motivation_factors", "motivation_other",
-]
+try:
+    creds_json = st.secrets["google_service_account"]["json"]
+    creds_dict = json.loads(creds_json)
 
-for key in question_keys:
-    if key not in st.session_state:
-        if key == "motivation_factors":
-            st.session_state[key] = []
-        elif "desc" in key or "reason" in key or "other" in key:
-            st.session_state[key] = ""
-        else:
-            st.session_state[key] = None
+    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    gc = gspread.authorize(creds)
+
+    # ✅ Open sheet by key
+    sheet = gc.open_by_key(st.secrets["sheet"]["url"]).sheet1
+
+except Exception as e:
+    st.error("❌ Error in Google Sheets setup or authorization:")
+    st.text(str(e))
+    st.text(traceback.format_exc())
+    sheet = None
 
 # -------------------------------
 # Display Questions
 # -------------------------------
 st.title(t["title"])
+
 st.radio(t["q1"], t["q1_options"], key="new_symptoms")
 if st.session_state.new_symptoms == t["q1_options"][0]:
     st.text_area(t["q1_desc"], key="new_symptoms_desc")
@@ -154,22 +156,6 @@ if st.session_state.considered_dropping == t["q9_options"][0]:
     st.text_area(t["q9_desc"], key="considered_reason")
 
 # -------------------------------
-# Google Sheets setup (from secrets)
-# -------------------------------
-try:
-    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds_dict = dict(st.secrets["google_service_account"])
-    
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    gc = gspread.authorize(creds)
-    sheet = gc.open(st.secrets["sheet]["url"]).sheet1
-except Exception as e:
-    st.error("❌ Error in Google Sheets setup or authorization:")
-    st.text(str(e))
-    st.text(traceback.format_exc())
-    sheet = None
-
-# -------------------------------
 # Submit button
 # -------------------------------
 if st.button(t["submit"]):
@@ -185,15 +171,15 @@ if st.button(t["submit"]):
         response = [
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             client, treatment_code, language,
-            st.session_state.new_symptoms, st.session_state.new_symptoms_desc,
+            st.session_state.new_symptoms, st.session_state.get("new_symptoms_desc", ""),
             st.session_state.side_effects_manageability,
             st.session_state.support_feeling,
             st.session_state.daily_tasks_impact,
-            st.session_state.activities_avoided, st.session_state.activities_avoided_desc,
+            st.session_state.activities_avoided, st.session_state.get("activities_avoided_desc", ""),
             st.session_state.informed_about_procedures,
             st.session_state.team_responsiveness,
             ", ".join(st.session_state.motivation_factors),
-            st.session_state.motivation_other,
+            st.session_state.get("motivation_other", ""),
             st.session_state.considered_dropping,
             st.session_state.get("considered_reason", "")
         ]
