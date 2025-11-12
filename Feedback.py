@@ -1,19 +1,21 @@
 import streamlit as st
 import pandas as pd
-import os
 from datetime import datetime
+import gspread
+from google.oauth2.service_account import Credentials
 
-# Hidden treatment code
+# -------------------------------
+# Hidden treatment code & client
+# -------------------------------
 treatment_code = "36c0c05b"
-
-# Get client from query parameters (from QR code)
 query_params = st.query_params
 client = query_params.get("client", "Unknown")
 
-# Language selector
+# -------------------------------
+# Language selector & translations
+# -------------------------------
 language = st.selectbox("Choose your language", ["English", "Spanish", "German"])
 
-# Translation dictionary
 translations = {
     "English": {
         "title": "Clinical Trial Feedback Form",
@@ -104,13 +106,11 @@ translations = {
     }
 }
 
-# Use selected language
 t = translations[language]
 
-# UI
-st.title(t["title"])
-
-# Initialize session state
+# -------------------------------
+# Session state initialization
+# -------------------------------
 question_keys = [
     "new_symptoms", "new_symptoms_desc",
     "side_effects_manageability",
@@ -120,7 +120,6 @@ question_keys = [
     "informed_about_procedures",
     "team_responsiveness",
     "motivation_factors", "motivation_other",
-
 ]
 
 for key in question_keys:
@@ -132,25 +131,39 @@ for key in question_keys:
         else:
             st.session_state[key] = None
 
-# Questions
-st.radio(t["q1"], t["q1_options"], index=None, key="new_symptoms")
+# -------------------------------
+# Display questions
+# -------------------------------
+st.title(t["title"])
+st.radio(t["q1"], t["q1_options"], key="new_symptoms")
 if st.session_state.new_symptoms == t["q1_options"][0]:
     st.text_area(t["q1_desc"], key="new_symptoms_desc")
 
-st.radio(t["q2"], t["q2_options"], index=None, key="side_effects_manageability")
-st.radio(t["q3"], t["q3_options"], index=None, key="support_feeling")
-st.radio(t["q4"], t["q4_options"], index=None, key="daily_tasks_impact")
-st.radio(t["q5"], t["q5_options"], index=None, key="activities_avoided")
+st.radio(t["q2"], t["q2_options"], key="side_effects_manageability")
+st.radio(t["q3"], t["q3_options"], key="support_feeling")
+st.radio(t["q4"], t["q4_options"], key="daily_tasks_impact")
+st.radio(t["q5"], t["q5_options"], key="activities_avoided")
 if st.session_state.activities_avoided == t["q5_options"][0]:
     st.text_area(t["q5_desc"], key="activities_avoided_desc")
-st.radio(t["q6"], t["q6_options"], index=None, key="informed_about_procedures")
-st.radio(t["q7"], t["q7_options"], index=None, key="team_responsiveness")
+
+st.radio(t["q6"], t["q6_options"], key="informed_about_procedures")
+st.radio(t["q7"], t["q7_options"], key="team_responsiveness")
 st.multiselect(t["q8"], t["q8_options"], key="motivation_factors")
-if "Other" in st.session_state.motivation_factors or "Otro" in st.session_state.motivation_factors or "Sonstiges" in st.session_state.motivation_factors:
+if any(opt in st.session_state.motivation_factors for opt in ["Other", "Otro", "Sonstiges"]):
     st.text_input(t["q8_other"], key="motivation_other")
 
+# -------------------------------
+# Google Sheets Setup
+# -------------------------------
+creds_dict = st.secrets["google"]
+scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+gc = gspread.authorize(creds)
+sheet = gc.open("ClinicalTrialFeedback").sheet1  # first sheet
 
+# -------------------------------
 # Submit button
+# -------------------------------
 if st.button(t["submit"]):
     required_keys = [
         "new_symptoms", "side_effects_manageability", "support_feeling",
@@ -162,38 +175,26 @@ if st.button(t["submit"]):
     if missing:
         st.warning(t["warning"])
     else:
-        response = {
-            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Client": client,
-            "Treatment Code": treatment_code,
-            "Language": language,
-            "NewSymptoms": st.session_state.new_symptoms,
-            "NewSymptoms Description": st.session_state.new_symptoms_desc,
-            "SideEffectsManageability": st.session_state.side_effects_manageability,
-            "SupportFeeling": st.session_state.support_feeling,
-            "DailyTasksImpact": st.session_state.daily_tasks_impact,
-            "ActivitiesAvoided": st.session_state.activities_avoided,
-            "ActivitiesAvoided Description": st.session_state.activities_avoided_desc,
-            "InformedAboutProcedures": st.session_state.informed_about_procedures,
-            "TeamResponsiveness": st.session_state.team_responsiveness,
-            "MotivationFactors": ", ".join(st.session_state.motivation_factors),
-            "Other": st.session_state.motivation_other,
-
-        }
-
-        folder_path = r"C:\Users\Sujeeth kumar\Desktop\New folder"
-        os.makedirs(folder_path, exist_ok=True)
-        file_path = os.path.join(folder_path, "Feedback.xlsx")
+        response = [
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            client,
+            treatment_code,
+            language,
+            st.session_state.new_symptoms,
+            st.session_state.new_symptoms_desc,
+            st.session_state.side_effects_manageability,
+            st.session_state.support_feeling,
+            st.session_state.daily_tasks_impact,
+            st.session_state.activities_avoided,
+            st.session_state.activities_avoided_desc,
+            st.session_state.informed_about_procedures,
+            st.session_state.team_responsiveness,
+            ", ".join(st.session_state.motivation_factors),
+            st.session_state.motivation_other
+        ]
 
         try:
-            if os.path.exists(file_path):
-                df = pd.read_excel(file_path, engine='openpyxl')
-                df = pd.concat([df, pd.DataFrame([response])], ignore_index=True)
-            else:
-                df = pd.DataFrame([response])
-
-            df.to_excel(file_path, index=False, engine='openpyxl')
-
+            sheet.append_row(response)
             st.session_state.feedback_submitted = True
 
             for key in question_keys:
@@ -211,23 +212,3 @@ if st.button(t["submit"]):
 if st.session_state.get("feedback_submitted"):
     st.success(t["success"])
     del st.session_state["feedback_submitted"]
-
-import os
-from openpyxl import load_workbook
-
-folder_path = r"C:\Users\Sujeeth kumar\Desktop\New folder"
-file_path = os.path.join(folder_path, "Feedback.xlsx")
-
-if os.path.exists(file_path):
-    wb = load_workbook(file_path)
-    ws = wb.active
-
-    for column_cells in ws.columns:
-        length = max(len(str(cell.value)) if cell.value else 0 for cell in column_cells)
-        column_letter = column_cells[0].column_letter
-        ws.column_dimensions[column_letter].width = length + 2  # Add padding
-
-    wb.save(file_path)
-
-
-
