@@ -191,7 +191,7 @@ if st.button(t["submit"]):
                     del st.session_state[key]
 
             st.toast(t["success"], icon="✅")
-            st.experimental_rerun()
+            st.rerun()
 
         except Exception as e:
             st.error(f"{t['error']} {e}")
