@@ -162,7 +162,7 @@ try:
     
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     gc = gspread.authorize(creds)
-    sheet = gc.open(st.secrets["app"]["sheet_name"]).sheet1
+    sheet = gc.open(st.secrets["sheet]["url"]).sheet1
 except Exception as e:
     st.error("❌ Error in Google Sheets setup or authorization:")
     st.text(str(e))
