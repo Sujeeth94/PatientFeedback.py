@@ -206,9 +206,9 @@ if st.session_state.get("form_submitted"):
     st.rerun()
 
 
-        except Exception as e:
-            st.error(f"{t['error']} {e}")
-            st.text(traceback.format_exc())
+    except Exception as e:
+        st.error(f"{t['error']} {e}")
+        st.text(traceback.format_exc())
 
 
 
