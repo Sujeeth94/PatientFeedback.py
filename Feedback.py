@@ -4,7 +4,6 @@ from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
 import traceback
-import json
 
 # -------------------------------
 # Hidden treatment code & client
@@ -109,33 +108,46 @@ translations = {
 }
 t = translations[language]
 
-
-
 # -------------------------------
 # Display Questions
 # -------------------------------
 st.title(t["title"])
 
-st.radio(t["q1"], t["q1_options"], key="new_symptoms")
+st.radio(t["q1"], t["q1_options"], key="new_symptoms", index=None)
 if st.session_state.new_symptoms == t["q1_options"][0]:
     st.text_area(t["q1_desc"], key="new_symptoms_desc")
 
-st.radio(t["q2"], t["q2_options"], key="side_effects_manageability")
-st.radio(t["q3"], t["q3_options"], key="support_feeling")
-st.radio(t["q4"], t["q4_options"], key="daily_tasks_impact")
-st.radio(t["q5"], t["q5_options"], key="activities_avoided")
+st.radio(t["q2"], t["q2_options"], key="side_effects_manageability", index=None)
+st.radio(t["q3"], t["q3_options"], key="support_feeling", index=None)
+st.radio(t["q4"], t["q4_options"], key="daily_tasks_impact", index=None)
+st.radio(t["q5"], t["q5_options"], key="activities_avoided", index=None)
 if st.session_state.activities_avoided == t["q5_options"][0]:
     st.text_area(t["q5_desc"], key="activities_avoided_desc")
 
-st.radio(t["q6"], t["q6_options"], key="informed_about_procedures")
-st.radio(t["q7"], t["q7_options"], key="team_responsiveness")
+st.radio(t["q6"], t["q6_options"], key="informed_about_procedures", index=None)
+st.radio(t["q7"], t["q7_options"], key="team_responsiveness", index=None)
 st.multiselect(t["q8"], t["q8_options"], key="motivation_factors")
 if any(opt in st.session_state.motivation_factors for opt in ["Other", "Otro", "Sonstiges"]):
     st.text_input(t["q8_other"], key="motivation_other")
 
-st.radio(t["q9"], t["q9_options"], key="considered_dropping",index=None)
+st.radio(t["q9"], t["q9_options"], key="considered_dropping", index=None)
 if st.session_state.considered_dropping == t["q9_options"][0]:
     st.text_area(t["q9_desc"], key="considered_reason")
+
+# -------------------------------
+# Google Sheets setup (from secrets)
+# -------------------------------
+try:
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds_dict = dict(st.secrets["google_service_account"])
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    gc = gspread.authorize(creds)
+    sheet = gc.open_by_url(st.secrets["sheet"]["url"]).sheet1
+except Exception as e:
+    st.error("❌ Error in Google Sheets setup or authorization:")
+    st.text(str(e))
+    st.text(traceback.format_exc())
+    sheet = None
 
 # -------------------------------
 # Submit button
@@ -171,23 +183,3 @@ if st.button(t["submit"]):
         except Exception as e:
             st.error(f"{t['error']} {e}")
             st.text(traceback.format_exc())
-
-# -------------------------------
-# Google Sheets setup (from secrets)
-# -------------------------------
-try:
-    creds_json = st.secrets["google_service_account"]["json"]
-    creds_dict = json.loads(creds_json)
-
-    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    gc = gspread.authorize(creds)
-
-    # ✅ Open sheet by key
-    sheet = gc.open_by_key(st.secrets["sheet"]["url"]).sheet1
-
-except Exception as e:
-    st.error("❌ Error in Google Sheets setup or authorization:")
-    st.text(str(e))
-    st.text(traceback.format_exc())
-    sheet = None
