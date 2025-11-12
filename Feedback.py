@@ -158,9 +158,14 @@ if any(opt in st.session_state.motivation_factors for opt in ["Other", "Otro", "
 # -------------------------------
 try:
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds_dict = st.secrets["google"].copy()
+
+    # Convert to normal dict safely
+    creds_dict = dict(st.secrets["google"])
+
     # Fix private_key: convert literal "\n" to actual newlines
-    creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+    if "private_key" in creds_dict:
+        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     gc = gspread.authorize(creds)
 
