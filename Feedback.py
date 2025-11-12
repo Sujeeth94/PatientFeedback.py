@@ -169,11 +169,16 @@ if st.button(t["submit"]):
         "Other": st.session_state.motivation_other,
     }
 
-    # Reset session state for questions (response remains in memory)
+    # Optional: keep in memory for debugging
+    st.session_state['last_response'] = response
+
+    # Reset form fields manually (no rerun needed)
     for key in question_keys:
-        if key in st.session_state:
-            del st.session_state[key]
+        if key == "motivation_factors":
+            st.session_state[key] = []
+        elif "desc" in key or "reason" in key or "other" in key:
+            st.session_state[key] = ""
+        else:
+            st.session_state[key] = None
 
     st.success(t["success"])
-        # Force rerun to reset all widgets visually
-    st.experimental_rerun()
