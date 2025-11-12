@@ -178,14 +178,13 @@ if st.button(t["submit"]):
             sheet.append_row(response)
             st.success(t["success"])
 
-            # ✅ Clear form inputs (keep language and client)
-            keys_to_keep = ["language", "client"]
-            for key in list(st.session_state.keys()):
-                if key not in keys_to_keep:
-                    st.session_state.pop(key, None)
-             # ✅ Force UI refresh
-            st.success(t["success"])
+            # ✅ Mark form as submitted and clear inputs next rerun
+            st.session_state.form_submitted = True
             st.experimental_rerun()
+
+        except Exception as e:
+            st.error(f"{t['error']} {e}")
+            st.text(traceback.format_exc())
 
 
 
