@@ -174,7 +174,7 @@ if st.button(t["submit"]):
             st.session_state.considered_dropping,
             st.session_state.get("considered_reason", "")
         ]
-        try:
+try:
     sheet.append_row(response)
     st.success(t["success"])
 
