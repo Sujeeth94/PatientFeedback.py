@@ -1,11 +1,11 @@
 import streamlit as st
+from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
-from datetime import datetime
 import traceback
 
 # -------------------------------
-# Get client from query parameters
+# Query parameters and client
 # -------------------------------
 query_params = st.query_params
 client = query_params.get("client", "Unknown")
@@ -108,7 +108,7 @@ translations = {
 t = translations[language]
 
 # -------------------------------
-# Initialize session state
+# Question keys for session state
 # -------------------------------
 question_keys = [
     "new_symptoms", "new_symptoms_desc",
@@ -122,17 +122,16 @@ question_keys = [
     "considered_dropping", "considered_reason"
 ]
 
+# Initialize session state
 for key in question_keys:
     if key not in st.session_state:
         if key == "motivation_factors":
             st.session_state[key] = []
-        elif "desc" in key or "reason" in key or "other" in key:
-            st.session_state[key] = ""
         else:
-            st.session_state[key] = None
+            st.session_state[key] = ""
 
 # -------------------------------
-# Display Questions
+# Display form
 # -------------------------------
 st.title(t["title"])
 
@@ -166,7 +165,7 @@ try:
     gc = gspread.authorize(creds)
     sheet = gc.open_by_url(st.secrets["sheet"]["url"]).sheet1
 except Exception as e:
-    st.error("❌ Error in Google Sheets setup or authorization:")
+    st.error("❌ Error in Google Sheets setup:")
     st.text(str(e))
     st.text(traceback.format_exc())
     sheet = None
@@ -181,7 +180,6 @@ if st.button(t["submit"]):
         "team_responsiveness", "motivation_factors", "considered_dropping"
     ]
     missing = [k for k in required_keys if st.session_state.get(k) in [None, "", []]]
-
     if missing:
         st.warning(t["warning"])
     else:
@@ -200,18 +198,23 @@ if st.button(t["submit"]):
             st.session_state.considered_dropping,
             st.session_state.get("considered_reason", "")
         ]
-
         try:
             sheet.append_row(response)
 
-            # Clear all session keys
+            # Clear form but keep success message
             for key in question_keys:
                 if key in st.session_state:
                     del st.session_state[key]
 
-            st.success(t["success"])
-            st.rerun()
+            st.session_state["feedback_submitted"] = True
 
         except Exception as e:
             st.error(f"{t['error']} {e}")
             st.text(traceback.format_exc())
+
+# -------------------------------
+# Show success message after submission
+# -------------------------------
+if st.session_state.get("feedback_submitted"):
+    st.success(t["success"])
+    del st.session_state["feedback_submitted"]
