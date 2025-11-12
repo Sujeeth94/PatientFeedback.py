@@ -177,16 +177,22 @@ if st.button(t["submit"]):
         try:
             sheet.append_row(response)
             st.success(t["success"])
-             # ✅ Clear form inputs after successful submission
-            for key in list(st.session_state.keys()):
-                if key not in ["language", "client"]:
-                    del st.session_state[key]
-            st.rerun()
+            st.success(t["success"])
 
+# ✅ Clear only form-related keys safely after successful submission
+        for key in [
+            "new_symptoms", "new_symptoms_desc", "side_effects_manageability", "support_feeling",
+            "daily_tasks_impact", "activities_avoided", "activities_avoided_desc",
+            "informed_about_procedures", "team_responsiveness", "motivation_factors",
+            "motivation_other", "considered_dropping", "considered_reason"
+        ]:
+            if key in st.session_state:
+                del st.session_state[key]
 
-        except Exception as e:
-            st.error(f"{t['error']} {e}")
-            st.text(traceback.format_exc())
+# ✅ Delay rerun slightly to let success message appear
+        st.toast(t["success"], icon="✅")
+        st.experimental_rerun()
+
 
 
 
