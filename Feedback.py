@@ -156,6 +156,7 @@ if st.button(t["submit"]):
         "team_responsiveness", "motivation_factors", "considered_dropping"
     ]
     missing = [k for k in required_keys if st.session_state.get(k) in [None, ""]]
+
     if missing:
         st.warning(t["warning"])
     else:
@@ -174,27 +175,27 @@ if st.button(t["submit"]):
             st.session_state.considered_dropping,
             st.session_state.get("considered_reason", "")
         ]
-try:
-    sheet.append_row(response)
-    st.success(t["success"])
 
-    # ✅ Clear only form-related keys safely after successful submission
-    for key in [
-        "new_symptoms", "new_symptoms_desc", "side_effects_manageability", "support_feeling",
-        "daily_tasks_impact", "activities_avoided", "activities_avoided_desc",
-        "informed_about_procedures", "team_responsiveness", "motivation_factors",
-        "motivation_other", "considered_dropping", "considered_reason"
-    ]:
-        if key in st.session_state:
-            del st.session_state[key]
+        try:
+            sheet.append_row(response)
+            st.success(t["success"])
 
-    # ✅ Delay rerun slightly to show success before refresh
-    st.toast(t["success"], icon="✅")
-    st.experimental_rerun()
+            # ✅ Clear form fields safely
+            for key in [
+                "new_symptoms", "new_symptoms_desc", "side_effects_manageability", "support_feeling",
+                "daily_tasks_impact", "activities_avoided", "activities_avoided_desc",
+                "informed_about_procedures", "team_responsiveness", "motivation_factors",
+                "motivation_other", "considered_dropping", "considered_reason"
+            ]:
+                if key in st.session_state:
+                    del st.session_state[key]
 
-except Exception as e:
-    st.error(f"{t['error']} {e}")
-    st.text(traceback.format_exc())
+            st.toast(t["success"], icon="✅")
+            st.experimental_rerun()
+
+        except Exception as e:
+            st.error(f"{t['error']} {e}")
+            st.text(traceback.format_exc())
 
 
 
