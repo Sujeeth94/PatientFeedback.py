@@ -44,8 +44,65 @@ translations = {
         "q9": "Have you considered dropping out at any point?",
         "q9_desc": "If yes, what made you reconsider?",
         "q9_options": ["Yes", "No"]
+    },
+    "Spanish": {
+        "title": "Formulario de Retroalimentación del Ensayo Clínico",
+        "submit": "Enviar",
+        "success": "¡Gracias por su retroalimentación!",
+        "warning": "Por favor seleccione opciones válidas para todas las preguntas antes de enviar.",
+        "error": "Ocurrió un error al guardar su retroalimentación:",
+        "q1": "¿Ha notado algún síntoma nuevo o cambios en su salud desde su última visita?",
+        "q1_desc": "Si la respuesta es sí, por favor describa:",
+        "q1_options": ["Sí", "No"],
+        "q2": "¿Los efectos secundarios se vuelven más o menos manejables con el tiempo?",
+        "q2_options": ["Mucho más manejables", "Ligeramente más manejables", "Sin cambio", "Ligeramente menos manejables", "Mucho menos manejables"],
+        "q3": "¿Se siente apoyado física y emocionalmente durante el estudio?",
+        "q3_options": ["Totalmente de acuerdo", "De acuerdo", "Neutral", "En desacuerdo", "Totalmente en desacuerdo"],
+        "q4": "¿Su participación ha afectado su capacidad para realizar tareas diarias esta semana?",
+        "q4_options": ["Para nada", "Ligeramente", "Moderadamente", "Significativamente", "Extremadamente"],
+        "q5": "¿Hay actividades específicas que ha tenido que evitar debido al estudio?",
+        "q5_desc": "Si la respuesta es sí, por favor especifique:",
+        "q5_options": ["Sí", "No"],
+        "q6": "¿Se siente adecuadamente informado sobre los procedimientos o visitas próximos?",
+        "q6_options": ["Muy bien informado", "Bien informado", "Algo informado", "Poco informado", "Nada informado"],
+        "q7": "¿El equipo del estudio responde a sus preguntas o inquietudes?",
+        "q7_options": ["Siempre", "A menudo", "A veces", "Raramente", "Nunca"],
+        "q8": "¿Qué lo mantiene motivado para continuar participando? (Seleccione todas las que correspondan)",
+        "q8_options": ["Mejora de la salud personal", "Contribución a la ciencia", "Apoyo del personal del estudio", "Compensación económica", "Otro"],
+        "q8_other": "Otro (por favor especifique):",
+        "q9": "¿Ha considerado abandonar el estudio en algún momento?",
+        "q9_desc": "Si la respuesta es sí, ¿qué lo hizo reconsiderar?",
+        "q9_options": ["Sí", "No"]
+    },
+    "German": {
+        "title": "Feedback-Formular zur Klinischen Studie",
+        "submit": "Absenden",
+        "success": "Vielen Dank für Ihr Feedback!",
+        "warning": "Bitte wählen Sie gültige Optionen für alle Fragen, bevor Sie absenden.",
+        "error": "Beim Speichern Ihres Feedbacks ist ein Fehler aufgetreten:",
+        "q1": "Haben Sie seit Ihrem letzten Besuch neue Symptome oder Veränderungen Ihrer Gesundheit bemerkt?",
+        "q1_desc": "Wenn ja, bitte beschreiben:",
+        "q1_options": ["Ja", "Nein"],
+        "q2": "Werden die Nebenwirkungen im Laufe der Zeit besser oder schlechter handhabbar?",
+        "q2_options": ["Viel besser handhabbar", "Etwas besser handhabbar", "Keine Veränderung", "Etwas schlechter handhabbar", "Viel schlechter handhabbar"],
+        "q3": "Fühlen Sie sich während der Studie körperlich und emotional unterstützt?",
+        "q3_options": ["Stimme voll zu", "Stimme zu", "Neutral", "Stimme nicht zu", "Stimme überhaupt nicht zu"],
+        "q4": "Hat Ihre Teilnahme Ihre Fähigkeit beeinträchtigt, diese Woche alltägliche Aufgaben zu erledigen?",
+        "q4_options": ["Überhaupt nicht", "Leicht", "Mäßig", "Deutlich", "Extrem"],
+        "q5": "Gab es bestimmte Aktivitäten, die Sie aufgrund der Studie vermeiden mussten?",
+        "q5_desc": "Wenn ja, bitte spezifizieren:",
+        "q5_options": ["Ja", "Nein"],
+        "q6": "Fühlen Sie sich ausreichend über bevorstehende Verfahren oder Besuche informiert?",
+        "q6_options": ["Sehr gut informiert", "Gut informiert", "Einigermaßen informiert", "Schlecht informiert", "Überhaupt nicht informiert"],
+        "q7": "Ist das Studienteam reaktionsschnell auf Ihre Fragen oder Bedenken?",
+        "q7_options": ["Immer", "Oft", "Manchmal", "Selten", "Nie"],
+        "q8": "Was motiviert Sie, weiterhin teilzunehmen? (Wählen Sie alle zutreffenden Optionen)",
+        "q8_options": ["Persönliche Gesundheitsverbesserung", "Beitrag zur Wissenschaft", "Unterstützung durch Studienpersonal", "Finanzielle Entschädigung", "Andere"],
+        "q8_other": "Andere (bitte angeben):",
+        "q9": "Haben Sie schon einmal erwogen, die Teilnahme abzubrechen?",
+        "q9_desc": "Wenn ja, was hat Sie zum Weitermachen bewegt?",
+        "q9_options": ["Ja", "Nein"]
     }
-    # Add Spanish and German translations here if needed
 }
 
 # Use selected language
@@ -87,7 +144,9 @@ if st.session_state.activities_avoided == t["q5_options"][0]:
 st.radio(t["q6"], t["q6_options"], index=None, key="informed_about_procedures")
 st.radio(t["q7"], t["q7_options"], index=None, key="team_responsiveness")
 st.multiselect(t["q8"], t["q8_options"], key="motivation_factors")
-if "Other" in st.session_state.motivation_factors:
+if "Other" in st.session_state.motivation_factors or \
+   "Otro" in st.session_state.motivation_factors or \
+   "Andere" in st.session_state.motivation_factors:
     st.text_input(t["q8_other"], key="motivation_other")
 
 # Submit
@@ -121,7 +180,7 @@ if st.button(t["submit"]):
         }
 
         try:
-            # Load Google Sheets credentials from Streamlit secrets
+            # Load GCP credentials from Streamlit secrets
             gcp = st.secrets["gcp"]
             service_account_info = json.loads(gcp["service_account"])
 
