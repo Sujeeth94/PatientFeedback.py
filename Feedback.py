@@ -4,7 +4,6 @@ from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
 import traceback
-import json
 
 # -------------------------------
 # Hidden treatment code & client
@@ -22,12 +21,9 @@ translations = {
     "English": {
         "title": "Clinical Trial Feedback Form",
         "submit": "Submit",
-        "success": "✅ Thank you for your feedback!",
-        "warning": "⚠️ Please select valid options for all questions before submitting.",
-        "error": "❌ An error occurred while saving your feedback:",
-        "upload": "Upload your Google Service Account JSON file",
-        "sheet_url_label": "Enter your Google Sheet URL",
-        "sheet_missing": "⚠️ Google Sheet URL is missing.",
+        "success": "Thank you for your feedback!",
+        "warning": "Please select valid options for all questions before submitting.",
+        "error": "An error occurred while saving your feedback:",
         "q1": "Have you noticed any new symptoms or changes in your health since your last visit?",
         "q1_desc": "If yes, please describe:",
         "q1_options": ["Yes", "No"],
@@ -54,12 +50,9 @@ translations = {
     "Spanish": {
         "title": "Formulario de Retroalimentación del Ensayo Clínico",
         "submit": "Enviar",
-        "success": "✅ ¡Gracias por su retroalimentación!",
-        "warning": "⚠️ Por favor seleccione opciones válidas para todas las preguntas antes de enviar.",
-        "error": "❌ Ocurrió un error al guardar su retroalimentación:",
-        "upload": "Suba su archivo JSON de la cuenta de servicio de Google",
-        "sheet_url_label": "Ingrese la URL de su hoja de Google",
-        "sheet_missing": "⚠️ Falta la URL de la hoja de Google.",
+        "success": "¡Gracias por su retroalimentación!",
+        "warning": "Por favor seleccione opciones válidas para todas las preguntas antes de enviar.",
+        "error": "Ocurrió un error al guardar su retroalimentación:",
         "q1": "¿Ha notado nuevos síntomas o cambios en su salud desde su última visita?",
         "q1_desc": "Si es así, por favor descríbalos:",
         "q1_options": ["Sí", "No"],
@@ -86,12 +79,9 @@ translations = {
     "German": {
         "title": "Feedbackformular zur klinischen Studie",
         "submit": "Absenden",
-        "success": "✅ Vielen Dank für Ihr Feedback!",
-        "warning": "⚠️ Bitte wählen Sie gültige Optionen für alle Fragen aus, bevor Sie absenden.",
-        "error": "❌ Beim Speichern Ihres Feedbacks ist ein Fehler aufgetreten:",
-        "upload": "Laden Sie Ihre Google-Servicekonto-JSON-Datei hoch",
-        "sheet_url_label": "Geben Sie die URL Ihrer Google-Tabelle ein",
-        "sheet_missing": "⚠️ Google-Sheet-URL fehlt.",
+        "success": "Vielen Dank für Ihr Feedback!",
+        "warning": "Bitte wählen Sie gültige Optionen für alle Fragen aus, bevor Sie absenden.",
+        "error": "Beim Speichern Ihres Feedbacks ist ein Fehler aufgetreten:",
         "q1": "Haben Sie seit Ihrem letzten Besuch neue Symptome oder Veränderungen Ihrer Gesundheit bemerkt?",
         "q1_desc": "Wenn ja, bitte beschreiben Sie:",
         "q1_options": ["Ja", "Nein"],
@@ -116,72 +106,99 @@ translations = {
         "q9_options": ["Ja", "Nein"]
     }
 }
-
 t = translations[language]
 
 # -------------------------------
-# Display form
+# Session state initialization
+# -------------------------------
+question_keys = [
+    "new_symptoms", "new_symptoms_desc",
+    "side_effects_manageability", "support_feeling",
+    "daily_tasks_impact", "activities_avoided", "activities_avoided_desc",
+    "informed_about_procedures", "team_responsiveness",
+    "motivation_factors", "motivation_other",
+]
+
+for key in question_keys:
+    if key not in st.session_state:
+        if key == "motivation_factors":
+            st.session_state[key] = []
+        elif "desc" in key or "reason" in key or "other" in key:
+            st.session_state[key] = ""
+        else:
+            st.session_state[key] = None
+
+# -------------------------------
+# Display Questions
 # -------------------------------
 st.title(t["title"])
-st.divider()
+st.radio(t["q1"], t["q1_options"], key="new_symptoms")
+if st.session_state.new_symptoms == t["q1_options"][0]:
+    st.text_area(t["q1_desc"], key="new_symptoms_desc")
 
-st.radio(t["q1"], t["q1_options"], key="q1")
-if st.session_state.q1 == t["q1_options"][0]:
-    st.text_area(t["q1_desc"], key="q1_desc")
+st.radio(t["q2"], t["q2_options"], key="side_effects_manageability")
+st.radio(t["q3"], t["q3_options"], key="support_feeling")
+st.radio(t["q4"], t["q4_options"], key="daily_tasks_impact")
+st.radio(t["q5"], t["q5_options"], key="activities_avoided")
+if st.session_state.activities_avoided == t["q5_options"][0]:
+    st.text_area(t["q5_desc"], key="activities_avoided_desc")
 
-st.radio(t["q2"], t["q2_options"], key="q2")
-st.radio(t["q3"], t["q3_options"], key="q3")
-st.radio(t["q4"], t["q4_options"], key="q4")
-st.radio(t["q5"], t["q5_options"], key="q5")
-if st.session_state.q5 == t["q5_options"][0]:
-    st.text_area(t["q5_desc"], key="q5_desc")
+st.radio(t["q6"], t["q6_options"], key="informed_about_procedures")
+st.radio(t["q7"], t["q7_options"], key="team_responsiveness")
+st.multiselect(t["q8"], t["q8_options"], key="motivation_factors")
+if any(opt in st.session_state.motivation_factors for opt in ["Other", "Otro", "Sonstiges"]):
+    st.text_input(t["q8_other"], key="motivation_other")
 
-st.radio(t["q6"], t["q6_options"], key="q6")
-st.radio(t["q7"], t["q7_options"], key="q7")
-st.multiselect(t["q8"], t["q8_options"], key="q8")
-if any(opt in st.session_state.q8 for opt in ["Other", "Otro", "Sonstiges"]):
-    st.text_input(t["q8_other"], key="q8_other")
-
-st.radio(t["q9"], t["q9_options"], key="q9")
-if st.session_state.q9 == t["q9_options"][0]:
-    st.text_area(t["q9_desc"], key="q9_desc")
-
-st.divider()
+st.radio(t["q9"], t["q9_options"], key="considered_dropping")
+if st.session_state.considered_dropping == t["q9_options"][0]:
+    st.text_area(t["q9_desc"], key="considered_reason")
 
 # -------------------------------
-# Upload credentials + Sheet URL
+# Google Sheets setup (from secrets)
 # -------------------------------
-uploaded_file = st.file_uploader(t["upload"], type="json")
-sheet_url = st.text_input(t["sheet_url_label"])
+try:
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds_dict = dict(st.secrets["google"])
+    creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    gc = gspread.authorize(creds)
+    sheet = gc.open(st.secrets["app"]["sheet_name"]).sheet1
+except Exception as e:
+    st.error("❌ Error in Google Sheets setup or authorization:")
+    st.text(str(e))
+    st.text(traceback.format_exc())
+    sheet = None
 
 # -------------------------------
-# Submit
+# Submit button
 # -------------------------------
 if st.button(t["submit"]):
-    if not uploaded_file:
-        st.error("⚠️ Please upload your service account JSON file.")
-    elif not sheet_url:
-        st.error(t["sheet_missing"])
+    required_keys = [
+        "new_symptoms", "side_effects_manageability", "support_feeling",
+        "daily_tasks_impact", "activities_avoided", "informed_about_procedures",
+        "team_responsiveness", "motivation_factors", "considered_dropping"
+    ]
+    missing = [k for k in required_keys if st.session_state.get(k) in [None, ""]]
+    if missing:
+        st.warning(t["warning"])
     else:
+        response = [
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            client, treatment_code, language,
+            st.session_state.new_symptoms, st.session_state.new_symptoms_desc,
+            st.session_state.side_effects_manageability,
+            st.session_state.support_feeling,
+            st.session_state.daily_tasks_impact,
+            st.session_state.activities_avoided, st.session_state.activities_avoided_desc,
+            st.session_state.informed_about_procedures,
+            st.session_state.team_responsiveness,
+            ", ".join(st.session_state.motivation_factors),
+            st.session_state.motivation_other,
+            st.session_state.considered_dropping,
+            st.session_state.get("considered_reason", "")
+        ]
         try:
-            creds_dict = json.load(uploaded_file)
-            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-            creds = Credentials.from_service_account_info(creds_dict, scopes=["https://www.googleapis.com/auth/spreadsheets"])
-            gc = gspread.authorize(creds)
-            sheet = gc.open_by_url(sheet_url).sheet1
-
-            data = [
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                client, language, treatment_code,
-                st.session_state.q1, st.session_state.q1_desc,
-                st.session_state.q2, st.session_state.q3, st.session_state.q4,
-                st.session_state.q5, st.session_state.q5_desc,
-                st.session_state.q6, st.session_state.q7,
-                ", ".join(st.session_state.q8), st.session_state.q8_other,
-                st.session_state.q9, st.session_state.q9_desc
-            ]
-
-            sheet.append_row(data)
+            sheet.append_row(response)
             st.success(t["success"])
         except Exception as e:
             st.error(f"{t['error']} {e}")
