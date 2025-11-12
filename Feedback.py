@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
+import traceback
 
 # -------------------------------
 # Hidden treatment code & client
@@ -153,14 +154,27 @@ if any(opt in st.session_state.motivation_factors for opt in ["Other", "Otro", "
     st.text_input(t["q8_other"], key="motivation_other")
 
 # -------------------------------
-# Google Sheets Setup
+# Google Sheets Setup with Debugging
 # -------------------------------
+try:
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds_dict = st.secrets["google"]  # Make sure your Secrets key is 'google'
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    gc = gspread.authorize(creds)
 
-scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-creds_dict = st.secrets["google"]
-creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-gc = gspread.authorize(creds)
-sheet = gc.open("Feedback").sheet1  # first sheet
+    sheet_name = "Feedback"
+    try:
+        sheet = gc.open(sheet_name).sheet1
+        st.success(f"✅ Google Sheet '{sheet_name}' opened successfully!")
+    except gspread.SpreadsheetNotFound:
+        st.error(f"❌ Spreadsheet '{sheet_name}' not found. Make sure it exists and is shared with the service account email.")
+        sheet = None
+
+except Exception as e:
+    st.error("❌ Error in Google Sheets setup or authorization:")
+    st.text(str(e))
+    st.text(traceback.format_exc())
+    sheet = None
 
 # -------------------------------
 # Submit button
@@ -194,21 +208,24 @@ if st.button(t["submit"]):
             st.session_state.motivation_other
         ]
 
-        try:
-            sheet.append_row(response)
-            st.session_state.feedback_submitted = True
+        if sheet:
+            try:
+                sheet.append_row(response)
+                st.session_state.feedback_submitted = True
 
-            for key in question_keys:
-                if key in st.session_state:
-                    del st.session_state[key]
+                # Clear session state
+                for key in question_keys:
+                    if key in st.session_state:
+                        del st.session_state[key]
 
-            st.rerun()
+                st.rerun()
 
-        except Exception as e:
-            import traceback
-            st.error(f"{t['error']} {e}")
-            st.text("Detailed error:")
-            st.text(traceback.format_exc())
+            except Exception as e:
+                st.error(f"{t['error']} {e}")
+                st.text("Detailed traceback:")
+                st.text(traceback.format_exc())
+        else:
+            st.error("Cannot submit feedback because the Google Sheet is not accessible.")
 
 if st.session_state.get("feedback_submitted"):
     st.success(t["success"])
