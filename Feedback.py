@@ -159,7 +159,7 @@ if st.session_state.considered_dropping == t["q9_options"][0]:
 try:
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
     creds_dict = dict(st.secrets["google"])
-    creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+    
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     gc = gspread.authorize(creds)
     sheet = gc.open(st.secrets["app"]["sheet_name"]).sheet1
