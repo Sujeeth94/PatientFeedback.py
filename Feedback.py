@@ -161,7 +161,7 @@ if st.button(t["submit"]):
     else:
         response = [
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            client, treatment_code, language,
+            client, "36c0c05b", language,
             st.session_state.new_symptoms, st.session_state.get("new_symptoms_desc", ""),
             st.session_state.side_effects_manageability,
             st.session_state.support_feeling,
@@ -177,6 +177,12 @@ if st.button(t["submit"]):
         try:
             sheet.append_row(response)
             st.success(t["success"])
+
+            # ✅ Clear form inputs (keep language and client)
+            for key in list(st.session_state.keys()):
+                if key not in ["language", "client"]:
+                    del st.session_state[key]
+            st.rerun()  # Refresh app to clear selections
 
         except Exception as e:
             st.error(f"{t['error']} {e}")
