@@ -175,12 +175,11 @@ if st.button(t["submit"]):
             st.session_state.get("considered_reason", "")
         ]
         try:
-            sheet.append_row(response)
+            worksheet.append_row(row)
             st.success(t["success"])
-             # ✅ Clear form inputs after successful submission
-            for key in list(st.session_state.keys()):
-                if key not in ["language", "client"]:
-                    del st.session_state[key]
+
+    # ✅ Mark that form was submitted
+            st.session_state["form_submitted"] = True
             st.rerun()
 
         except Exception as e:
