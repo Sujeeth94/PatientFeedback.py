@@ -105,6 +105,24 @@ translations = {
 t = translations[language]
 
 # -------------------------------
+# Reset function
+# -------------------------------
+def reset_form():
+    st.session_state.new_symptoms = None
+    st.session_state.new_symptoms_desc = ""
+    st.session_state.side_effects_manageability = None
+    st.session_state.support_feeling = None
+    st.session_state.daily_tasks_impact = None
+    st.session_state.activities_avoided = None
+    st.session_state.activities_avoided_desc = ""
+    st.session_state.informed_about_procedures = None
+    st.session_state.team_responsiveness = None
+    st.session_state.motivation_factors = []
+    st.session_state.motivation_other = ""
+    st.session_state.considered_dropping = None
+    st.session_state.considered_reason = ""
+
+# -------------------------------
 # Display Questions
 # -------------------------------
 st.title(t["title"])
@@ -131,13 +149,11 @@ if st.session_state.considered_dropping == t["q9_options"][0]:
     st.text_area(t["q9_desc"], key="considered_reason")
 
 # -------------------------------
-# Google Sheets setup (from secrets)
+# Google Sheets setup
 # -------------------------------
 try:
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"], scopes=scopes
-    )
+    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
     gc = gspread.authorize(creds)
     sheet = gc.open_by_url(st.secrets["sheet"]["url"]).sheet1
 except Exception as e:
@@ -155,7 +171,7 @@ if st.button(t["submit"]):
         "daily_tasks_impact", "activities_avoided", "informed_about_procedures",
         "team_responsiveness", "motivation_factors", "considered_dropping"
     ]
-    missing = [k for k in required_keys if st.session_state.get(k) in [None, ""]]
+    missing = [k for k in required_keys if st.session_state.get(k) in [None, "", []]]
     if missing:
         st.warning(t["warning"])
     else:
@@ -177,13 +193,7 @@ if st.button(t["submit"]):
         try:
             sheet.append_row(response)
             st.success(t["success"])
-             # ✅ Clear form inputs after successful submission
-            for key in list(st.session_state.keys()):
-                if key not in ["language", "client"]:
-                    del st.session_state[key]
+            reset_form()
             st.rerun()
-
-
         except Exception as e:
             st.error(f"{t['error']} {e}")
-            st.text(traceback.format_exc())
