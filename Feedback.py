@@ -109,25 +109,7 @@ translations = {
 }
 t = translations[language]
 
-# -------------------------------
-# Google Sheets setup (from secrets)
-# -------------------------------
-try:
-    creds_json = st.secrets["google_service_account"]["json"]
-    creds_dict = json.loads(creds_json)
 
-    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    gc = gspread.authorize(creds)
-
-    # ✅ Open sheet by key
-    sheet = gc.open_by_key(st.secrets["sheet"]["url"]).sheet1
-
-except Exception as e:
-    st.error("❌ Error in Google Sheets setup or authorization:")
-    st.text(str(e))
-    st.text(traceback.format_exc())
-    sheet = None
 
 # -------------------------------
 # Display Questions
@@ -189,3 +171,23 @@ if st.button(t["submit"]):
         except Exception as e:
             st.error(f"{t['error']} {e}")
             st.text(traceback.format_exc())
+
+# -------------------------------
+# Google Sheets setup (from secrets)
+# -------------------------------
+try:
+    creds_json = st.secrets["google_service_account"]["json"]
+    creds_dict = json.loads(creds_json)
+
+    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    gc = gspread.authorize(creds)
+
+    # ✅ Open sheet by key
+    sheet = gc.open_by_key(st.secrets["sheet"]["url"]).sheet1
+
+except Exception as e:
+    st.error("❌ Error in Google Sheets setup or authorization:")
+    st.text(str(e))
+    st.text(traceback.format_exc())
+    sheet = None
