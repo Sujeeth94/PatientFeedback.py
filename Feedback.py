@@ -1,32 +1,5 @@
 import streamlit as st
 from datetime import datetime
-import gspread
-from google.oauth2.service_account import Credentials
-
-# ----------------------------
-# Google Sheets setup
-# ----------------------------
-def get_gsheet():
-    import json
-    creds_dict = json.loads(st.secrets["gcp"]["service_account"])
-    creds = Credentials.from_service_account_info(
-        creds_dict,
-        scopes=[
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive"
-        ]
-    )
-    client = gspread.authorize(creds)
-    sheet_id = st.secrets["gcp"]["sheet_id"]
-    sheet = client.open_by_key(sheet_id).sheet1
-    return sheet
-
-def append_feedback_to_sheet(response: dict):
-    sheet = get_gsheet()
-    # Create headers if empty
-    if sheet.row_count == 0 or sheet.get_all_values() == []:
-        sheet.append_row(list(response.keys()))
-    sheet.append_row(list(response.values()))
 
 # ----------------------------
 # Hidden treatment code
@@ -49,7 +22,6 @@ translations = {
         "submit": "Submit",
         "success": "Thank you for your feedback!",
         "warning": "Please select valid options for all questions before submitting.",
-        "error": "An error occurred while saving your feedback:",
         "q1": "Have you noticed any new symptoms or changes in your health since your last visit?",
         "q1_desc": "If yes, please describe:",
         "q1_options": ["Yes", "No"],
@@ -78,7 +50,6 @@ translations = {
         "submit": "Enviar",
         "success": "¡Gracias por su retroalimentación!",
         "warning": "Por favor seleccione opciones válidas para todas las preguntas antes de enviar.",
-        "error": "Ocurrió un error al guardar su retroalimentación:",
         "q1": "¿Ha notado nuevos síntomas o cambios en su salud desde su última visita?",
         "q1_desc": "Si es así, por favor descríbalos:",
         "q1_options": ["Sí", "No"],
@@ -107,7 +78,6 @@ translations = {
         "submit": "Absenden",
         "success": "Vielen Dank für Ihr Feedback!",
         "warning": "Bitte wählen Sie gültige Optionen für alle Fragen aus, bevor Sie absenden.",
-        "error": "Beim Speichern Ihres Feedbacks ist ein Fehler aufgetreten:",
         "q1": "Haben Sie seit Ihrem letzten Besuch neue Symptome oder Veränderungen Ihrer Gesundheit bemerkt?",
         "q1_desc": "Wenn ja, bitte beschreiben Sie:",
         "q1_options": ["Ja", "Nein"],
@@ -191,6 +161,7 @@ if st.button(t["submit"]):
     if missing:
         st.warning(t["warning"])
     else:
+        # Collect response (optional, just for local processing)
         response = {
             "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "Client": client,
@@ -209,21 +180,9 @@ if st.button(t["submit"]):
             "Other": st.session_state.motivation_other,
         }
 
-        try:
-            append_feedback_to_sheet(response)
-            st.session_state.feedback_submitted = True
+        # Reset session state
+        for key in question_keys:
+            if key in st.session_state:
+                del st.session_state[key]
 
-            # Reset session state
-            for key in question_keys:
-                if key in st.session_state:
-                    del st.session_state[key]
-
-            st.rerun()
-        except Exception as e:
-            import traceback
-            st.error(f"{t['error']} {e}")
-            st.text(traceback.format_exc())
-
-if st.session_state.get("feedback_submitted"):
-    st.success(t["success"])
-    del st.session_state["feedback_submitted"]
+        st.success(t["success"])
