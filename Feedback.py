@@ -5,10 +5,6 @@ import gspread
 from google.oauth2.service_account import Credentials
 import traceback
 
-# -------------------------------
-# Hidden treatment code & client
-# -------------------------------
-treatment_code = "36c0c05b"
 query_params = st.query_params
 client = query_params.get("client", "Unknown")
 
