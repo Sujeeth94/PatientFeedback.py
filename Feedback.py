@@ -179,12 +179,13 @@ if st.button(t["submit"]):
             st.success(t["success"])
 
             # ✅ Clear form inputs (keep language and client)
+            keys_to_keep = ["language", "client"]
             for key in list(st.session_state.keys()):
-                if key not in ["language", "client"]:
-                    del st.session_state[key]
-            st.rerun()  # Refresh app to clear selections
+                if key not in keys_to_keep:
+                    st.session_state.pop(key, None)
+             # ✅ Force UI refresh
+            st.success(t["success"])
+            st.experimental_rerun()
 
-        except Exception as e:
-            st.error(f"{t['error']} {e}")
-            st.text(traceback.format_exc())
+
 
