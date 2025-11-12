@@ -159,7 +159,7 @@ creds_dict = st.secrets["google"]
 scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
 gc = gspread.authorize(creds)
-sheet = gc.open("ClinicalTrialFeedback").sheet1  # first sheet
+sheet = gc.open("Feedback").sheet1  # first sheet
 
 # -------------------------------
 # Submit button
