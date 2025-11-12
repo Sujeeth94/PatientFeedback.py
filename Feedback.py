@@ -1,27 +1,26 @@
 import streamlit as st
+import pandas as pd
+import os
 from datetime import datetime
 
-# ----------------------------
 # Hidden treatment code
-# ----------------------------
 treatment_code = "36c0c05b"
 
 # Get client from query parameters (from QR code)
 query_params = st.query_params
-client = query_params.get("client", ["Unknown"])[0]
+client = query_params.get("client", "Unknown")
 
 # Language selector
 language = st.selectbox("Choose your language", ["English", "Spanish", "German"])
 
-# ----------------------------
-# Translations
-# ----------------------------
+# Translation dictionary
 translations = {
     "English": {
         "title": "Clinical Trial Feedback Form",
         "submit": "Submit",
         "success": "Thank you for your feedback!",
         "warning": "Please select valid options for all questions before submitting.",
+        "error": "An error occurred while saving your feedback:",
         "q1": "Have you noticed any new symptoms or changes in your health since your last visit?",
         "q1_desc": "If yes, please describe:",
         "q1_options": ["Yes", "No"],
@@ -50,6 +49,7 @@ translations = {
         "submit": "Enviar",
         "success": "¡Gracias por su retroalimentación!",
         "warning": "Por favor seleccione opciones válidas para todas las preguntas antes de enviar.",
+        "error": "Ocurrió un error al guardar su retroalimentación:",
         "q1": "¿Ha notado nuevos síntomas o cambios en su salud desde su última visita?",
         "q1_desc": "Si es así, por favor descríbalos:",
         "q1_options": ["Sí", "No"],
@@ -78,6 +78,7 @@ translations = {
         "submit": "Absenden",
         "success": "Vielen Dank für Ihr Feedback!",
         "warning": "Bitte wählen Sie gültige Optionen für alle Fragen aus, bevor Sie absenden.",
+        "error": "Beim Speichern Ihres Feedbacks ist ein Fehler aufgetreten:",
         "q1": "Haben Sie seit Ihrem letzten Besuch neue Symptome oder Veränderungen Ihrer Gesundheit bemerkt?",
         "q1_desc": "Wenn ja, bitte beschreiben Sie:",
         "q1_options": ["Ja", "Nein"],
@@ -103,11 +104,13 @@ translations = {
     }
 }
 
+# Use selected language
 t = translations[language]
 
-# ----------------------------
+# UI
+st.title(t["title"])
+
 # Initialize session state
-# ----------------------------
 question_keys = [
     "new_symptoms", "new_symptoms_desc",
     "side_effects_manageability",
@@ -117,6 +120,7 @@ question_keys = [
     "informed_about_procedures",
     "team_responsiveness",
     "motivation_factors", "motivation_other",
+
 ]
 
 for key in question_keys:
@@ -128,9 +132,7 @@ for key in question_keys:
         else:
             st.session_state[key] = None
 
-# ----------------------------
-# Questions UI
-# ----------------------------
+# Questions
 st.radio(t["q1"], t["q1_options"], index=None, key="new_symptoms")
 if st.session_state.new_symptoms == t["q1_options"][0]:
     st.text_area(t["q1_desc"], key="new_symptoms_desc")
@@ -144,41 +146,88 @@ if st.session_state.activities_avoided == t["q5_options"][0]:
 st.radio(t["q6"], t["q6_options"], index=None, key="informed_about_procedures")
 st.radio(t["q7"], t["q7_options"], index=None, key="team_responsiveness")
 st.multiselect(t["q8"], t["q8_options"], key="motivation_factors")
-if any(x in st.session_state.motivation_factors for x in ["Other", "Otro", "Sonstiges"]):
+if "Other" in st.session_state.motivation_factors or "Otro" in st.session_state.motivation_factors or "Sonstiges" in st.session_state.motivation_factors:
     st.text_input(t["q8_other"], key="motivation_other")
 
-# ----------------------------
-# Submit feedback (keep response in memory only)
-# ----------------------------
+
+# Submit button
 if st.button(t["submit"]):
-    response = {
-        "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "Client": client,
-        "Treatment Code": treatment_code,
-        "Language": language,
-        "NewSymptoms": st.session_state.new_symptoms,
-        "NewSymptoms Description": st.session_state.new_symptoms_desc,
-        "SideEffectsManageability": st.session_state.side_effects_manageability,
-        "SupportFeeling": st.session_state.support_feeling,
-        "DailyTasksImpact": st.session_state.daily_tasks_impact,
-        "ActivitiesAvoided": st.session_state.activities_avoided,
-        "ActivitiesAvoided Description": st.session_state.activities_avoided_desc,
-        "InformedAboutProcedures": st.session_state.informed_about_procedures,
-        "TeamResponsiveness": st.session_state.team_responsiveness,
-        "MotivationFactors": ", ".join(st.session_state.motivation_factors),
-        "Other": st.session_state.motivation_other,
-    }
+    required_keys = [
+        "new_symptoms", "side_effects_manageability", "support_feeling",
+        "daily_tasks_impact", "activities_avoided", "informed_about_procedures",
+        "team_responsiveness", "motivation_factors"
+    ]
+    missing = [key for key in required_keys if st.session_state.get(key) in [None, ""]]
 
-    # Optional: keep in memory for debugging
-    st.session_state['last_response'] = response
+    if missing:
+        st.warning(t["warning"])
+    else:
+        response = {
+            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Client": client,
+            "Treatment Code": treatment_code,
+            "Language": language,
+            "NewSymptoms": st.session_state.new_symptoms,
+            "NewSymptoms Description": st.session_state.new_symptoms_desc,
+            "SideEffectsManageability": st.session_state.side_effects_manageability,
+            "SupportFeeling": st.session_state.support_feeling,
+            "DailyTasksImpact": st.session_state.daily_tasks_impact,
+            "ActivitiesAvoided": st.session_state.activities_avoided,
+            "ActivitiesAvoided Description": st.session_state.activities_avoided_desc,
+            "InformedAboutProcedures": st.session_state.informed_about_procedures,
+            "TeamResponsiveness": st.session_state.team_responsiveness,
+            "MotivationFactors": ", ".join(st.session_state.motivation_factors),
+            "Other": st.session_state.motivation_other,
 
-    # Reset form fields manually (no rerun needed)
-    for key in question_keys:
-        if key == "motivation_factors":
-            st.session_state[key] = []
-        elif "desc" in key or "reason" in key or "other" in key:
-            st.session_state[key] = ""
-        else:
-            st.session_state[key] = None
+        }
 
+        folder_path = r"C:\Users\Sujeeth kumar\Desktop\New folder"
+        os.makedirs(folder_path, exist_ok=True)
+        file_path = os.path.join(folder_path, "Feedback.xlsx")
+
+        try:
+            if os.path.exists(file_path):
+                df = pd.read_excel(file_path, engine='openpyxl')
+                df = pd.concat([df, pd.DataFrame([response])], ignore_index=True)
+            else:
+                df = pd.DataFrame([response])
+
+            df.to_excel(file_path, index=False, engine='openpyxl')
+
+            st.session_state.feedback_submitted = True
+
+            for key in question_keys:
+                if key in st.session_state:
+                    del st.session_state[key]
+
+            st.rerun()
+
+        except Exception as e:
+            import traceback
+            st.error(f"{t['error']} {e}")
+            st.text("Detailed error:")
+            st.text(traceback.format_exc())
+
+if st.session_state.get("feedback_submitted"):
     st.success(t["success"])
+    del st.session_state["feedback_submitted"]
+
+import os
+from openpyxl import load_workbook
+
+folder_path = r"C:\Users\Sujeeth kumar\Desktop\New folder"
+file_path = os.path.join(folder_path, "Feedback.xlsx")
+
+if os.path.exists(file_path):
+    wb = load_workbook(file_path)
+    ws = wb.active
+
+    for column_cells in ws.columns:
+        length = max(len(str(cell.value)) if cell.value else 0 for cell in column_cells)
+        column_letter = column_cells[0].column_letter
+        ws.column_dimensions[column_letter].width = length + 2  # Add padding
+
+    wb.save(file_path)
+
+
+
