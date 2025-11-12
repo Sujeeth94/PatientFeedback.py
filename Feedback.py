@@ -138,11 +138,12 @@ if st.session_state.considered_dropping == t["q9_options"][0]:
 # Google Sheets setup (from secrets)
 # -------------------------------
 try:
-    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds_dict = dict(st.secrets["google_service_account"])
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    gc = gspread.authorize(creds)
-    sheet = gc.open_by_url(st.secrets["sheet"]["url"]).sheet1
+scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+creds = Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"], scopes=scopes
+)
+gc = gspread.authorize(creds)
+sheet = gc.open_by_url(st.secrets["sheet"]["url"]).sheet1
 except Exception as e:
     st.error("❌ Error in Google Sheets setup or authorization:")
     st.text(str(e))
