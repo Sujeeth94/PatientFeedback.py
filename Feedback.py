@@ -1,10 +1,12 @@
 import streamlit as st
-import pandas as pd
-from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
+from datetime import datetime
 import traceback
 
+# -------------------------------
+# Get client from query parameters
+# -------------------------------
 query_params = st.query_params
 client = query_params.get("client", "Unknown")
 
@@ -102,49 +104,56 @@ translations = {
         "q9_options": ["Ja", "Nein"]
     }
 }
+
 t = translations[language]
 
 # -------------------------------
-# Reset function
+# Initialize session state
 # -------------------------------
-def reset_form():
-    st.session_state.new_symptoms = None
-    st.session_state.new_symptoms_desc = ""
-    st.session_state.side_effects_manageability = None
-    st.session_state.support_feeling = None
-    st.session_state.daily_tasks_impact = None
-    st.session_state.activities_avoided = None
-    st.session_state.activities_avoided_desc = ""
-    st.session_state.informed_about_procedures = None
-    st.session_state.team_responsiveness = None
-    st.session_state.motivation_factors = []
-    st.session_state.motivation_other = ""
-    st.session_state.considered_dropping = None
-    st.session_state.considered_reason = ""
+question_keys = [
+    "new_symptoms", "new_symptoms_desc",
+    "side_effects_manageability",
+    "support_feeling",
+    "daily_tasks_impact",
+    "activities_avoided", "activities_avoided_desc",
+    "informed_about_procedures",
+    "team_responsiveness",
+    "motivation_factors", "motivation_other",
+    "considered_dropping", "considered_reason"
+]
+
+for key in question_keys:
+    if key not in st.session_state:
+        if key == "motivation_factors":
+            st.session_state[key] = []
+        elif "desc" in key or "reason" in key or "other" in key:
+            st.session_state[key] = ""
+        else:
+            st.session_state[key] = None
 
 # -------------------------------
 # Display Questions
 # -------------------------------
 st.title(t["title"])
 
-st.radio(t["q1"], t["q1_options"], key="new_symptoms", index=None)
+st.radio(t["q1"], t["q1_options"], key="new_symptoms")
 if st.session_state.new_symptoms == t["q1_options"][0]:
     st.text_area(t["q1_desc"], key="new_symptoms_desc")
 
-st.radio(t["q2"], t["q2_options"], key="side_effects_manageability", index=None)
-st.radio(t["q3"], t["q3_options"], key="support_feeling", index=None)
-st.radio(t["q4"], t["q4_options"], key="daily_tasks_impact", index=None)
-st.radio(t["q5"], t["q5_options"], key="activities_avoided", index=None)
+st.radio(t["q2"], t["q2_options"], key="side_effects_manageability")
+st.radio(t["q3"], t["q3_options"], key="support_feeling")
+st.radio(t["q4"], t["q4_options"], key="daily_tasks_impact")
+st.radio(t["q5"], t["q5_options"], key="activities_avoided")
 if st.session_state.activities_avoided == t["q5_options"][0]:
     st.text_area(t["q5_desc"], key="activities_avoided_desc")
 
-st.radio(t["q6"], t["q6_options"], key="informed_about_procedures", index=None)
-st.radio(t["q7"], t["q7_options"], key="team_responsiveness", index=None)
+st.radio(t["q6"], t["q6_options"], key="informed_about_procedures")
+st.radio(t["q7"], t["q7_options"], key="team_responsiveness")
 st.multiselect(t["q8"], t["q8_options"], key="motivation_factors")
 if any(opt in st.session_state.motivation_factors for opt in ["Other", "Otro", "Sonstiges"]):
     st.text_input(t["q8_other"], key="motivation_other")
 
-st.radio(t["q9"], t["q9_options"], key="considered_dropping", index=None)
+st.radio(t["q9"], t["q9_options"], key="considered_dropping")
 if st.session_state.considered_dropping == t["q9_options"][0]:
     st.text_area(t["q9_desc"], key="considered_reason")
 
@@ -172,6 +181,7 @@ if st.button(t["submit"]):
         "team_responsiveness", "motivation_factors", "considered_dropping"
     ]
     missing = [k for k in required_keys if st.session_state.get(k) in [None, "", []]]
+
     if missing:
         st.warning(t["warning"])
     else:
@@ -190,10 +200,18 @@ if st.button(t["submit"]):
             st.session_state.considered_dropping,
             st.session_state.get("considered_reason", "")
         ]
+
         try:
             sheet.append_row(response)
+
+            # Clear all session keys
+            for key in question_keys:
+                if key in st.session_state:
+                    del st.session_state[key]
+
             st.success(t["success"])
-            reset_form()
             st.rerun()
+
         except Exception as e:
             st.error(f"{t['error']} {e}")
+            st.text(traceback.format_exc())
