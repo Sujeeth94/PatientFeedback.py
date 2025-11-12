@@ -188,10 +188,11 @@ if st.button(t["submit"]):
 
 # ✅ After button block — handle post-submit UI
 if st.session_state.get("form_submitted"):
+    # Show success message once
     st.success(t["success"])
     st.toast(t["success"], icon="✅")
 
-    # ✅ Clear only relevant keys
+    # Phase 1: clear all response keys
     for key in [
         "new_symptoms", "new_symptoms_desc", "side_effects_manageability", "support_feeling",
         "daily_tasks_impact", "activities_avoided", "activities_avoided_desc",
@@ -201,9 +202,17 @@ if st.session_state.get("form_submitted"):
         if key in st.session_state:
             del st.session_state[key]
 
-    # ✅ Remove flag and refresh
+    # Mark that we just cleared — this prevents instant rerun with stale state
+    st.session_state["just_cleared"] = True
     del st.session_state["form_submitted"]
     st.rerun()
+
+# ✅ Phase 2: run immediately after rerun to reset UI cleanly
+if st.session_state.get("just_cleared"):
+    # Remove the flag so this block only runs once
+    del st.session_state["just_cleared"]
+    st.experimental_set_query_params()  # optional: reset query params to clean URL
+
 
 
 
