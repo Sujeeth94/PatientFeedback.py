@@ -3,237 +3,135 @@ import pandas as pd
 from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
-import traceback
+import json
 
-# -------------------------------
-# Hidden treatment code & client
-# -------------------------------
+# Hidden treatment code
 treatment_code = "36c0c05b"
+
+# Get client name from URL (QR code)
 query_params = st.query_params
 client = query_params.get("client", "Unknown")
 
-# -------------------------------
-# Language selector & translations
-# -------------------------------
-language = st.selectbox("Choose your language", ["English", "Spanish", "German"])
+# Language selector
+language = st.selectbox(
+    "Choose your language / Elija su idioma / Wählen Sie Ihre Sprache",
+    ["English", "Spanish", "German"]
+)
 
+# Translation dictionary
 translations = {
     "English": {
         "title": "Clinical Trial Feedback Form",
-        "submit": "Submit",
-        "success": "Thank you for your feedback!",
-        "warning": "Please select valid options for all questions before submitting.",
-        "error": "An error occurred while saving your feedback:",
-        "q1": "Have you noticed any new symptoms or changes in your health since your last visit?",
-        "q1_desc": "If yes, please describe:",
-        "q1_options": ["Yes", "No"],
-        "q2": "Are the side effects becoming more or less manageable over time?",
-        "q2_options": ["Much More Manageable", "Slightly More Manageable", "No Change", "Slightly Less Manageable", "Much Less Manageable"],
-        "q3": "Do you feel physically and emotionally supported during the study?",
-        "q3_options": ["Strongly Agree", "Agree", "Neutral", "Disagree", "Strongly Disagree"],
-        "q4": "Has your participation affected your ability to perform daily tasks this week?",
-        "q4_options": ["Not at All", "Slightly", "Moderately", "Significantly", "Extremely"],
-        "q5": "Are there any specific activities you’ve had to avoid due to the study?",
-        "q5_desc": "If yes, please specify:",
-        "q5_options": ["Yes", "No"],
-        "q6": "Do you feel adequately informed about upcoming procedures or visits?",
-        "q6_options": ["Very Well Informed", "Well Informed", "Somewhat Informed", "Poorly Informed", "Not Informed at All"],
-        "q7": "Is the study team responsive to your questions or concerns?",
-        "q7_options": ["Always", "Often", "Sometimes", "Rarely", "Never"],
-        "q8": "What keeps you motivated to continue participating? (Select all that apply)",
-        "q8_options": ["Personal health improvement", "Contribution to science", "Support from study staff", "Financial compensation", "Other"],
-        "q8_other": "Other (please specify):",
-        "q9": "Have you considered dropping out at any point?",
-        "q9_desc": "If yes, what made you reconsider?",
-        "q9_options": ["Yes", "No"]
+        "intro": "Please answer the following questions based on your experience:",
+        "questions": [
+            "How satisfied are you with the overall treatment process?",
+            "How would you rate the professionalism of the clinical staff?",
+            "Was the information provided before the trial clear and understandable?",
+            "Was the appointment scheduling convenient for you?",
+            "How comfortable were the clinic facilities?",
+            "Were your concerns addressed in a timely manner?",
+            "How satisfied are you with the communication during the trial?",
+            "Did you feel your privacy was respected during the process?",
+            "Would you recommend participation in this trial to others?"
+        ],
+        "comments": "Any additional comments or suggestions?",
+        "upload": "Upload your Google Service Account JSON file",
+        "submit": "Submit Feedback",
+        "thanks": "✅ Thank you! Your feedback has been recorded.",
+        "no_file": "⚠️ Please upload your service account JSON file.",
+        "no_sheet": "⚠️ Google Sheet URL not found in secrets.",
+        "error_sheet": "Cannot submit feedback because the Google Sheet is not accessible."
     },
     "Spanish": {
         "title": "Formulario de Retroalimentación del Ensayo Clínico",
-        "submit": "Enviar",
-        "success": "¡Gracias por su retroalimentación!",
-        "warning": "Por favor seleccione opciones válidas para todas las preguntas antes de enviar.",
-        "error": "Ocurrió un error al guardar su retroalimentación:",
-        "q1": "¿Ha notado nuevos síntomas o cambios en su salud desde su última visita?",
-        "q1_desc": "Si es así, por favor descríbalos:",
-        "q1_options": ["Sí", "No"],
-        "q2": "¿Los efectos secundarios se han vuelto más o menos manejables con el tiempo?",
-        "q2_options": ["Mucho más manejables", "Un poco más manejables", "Sin cambios", "Un poco menos manejables", "Mucho menos manejables"],
-        "q3": "¿Se siente física y emocionalmente apoyado durante el estudio?",
-        "q3_options": ["Totalmente de acuerdo", "De acuerdo", "Neutral", "En desacuerdo", "Totalmente en desacuerdo"],
-        "q4": "¿Su participación ha afectado su capacidad para realizar tareas diarias esta semana?",
-        "q4_options": ["En absoluto", "Levemente", "Moderadamente", "Significativamente", "Extremadamente"],
-        "q5": "¿Ha tenido que evitar actividades específicas debido al estudio?",
-        "q5_desc": "Si es así, por favor especifique:",
-        "q5_options": ["Sí", "No"],
-        "q6": "¿Se siente adecuadamente informado sobre los procedimientos o visitas próximas?",
-        "q6_options": ["Muy bien informado", "Bien informado", "Algo informado", "Mal informado", "Nada informado"],
-        "q7": "¿El equipo del estudio responde a sus preguntas o inquietudes?",
-        "q7_options": ["Siempre", "Frecuentemente", "A veces", "Raramente", "Nunca"],
-        "q8": "¿Qué le motiva a seguir participando? (Seleccione todas las que correspondan)",
-        "q8_options": ["Mejora de la salud personal", "Contribución a la ciencia", "Apoyo del personal del estudio", "Compensación económica", "Otro"],
-        "q8_other": "Otro (por favor especifique):",
-        "q9": "¿Ha considerado abandonar el estudio en algún momento?",
-        "q9_desc": "Si es así, ¿qué le hizo reconsiderarlo?",
-        "q9_options": ["Sí", "No"]
+        "intro": "Por favor, responda las siguientes preguntas según su experiencia:",
+        "questions": [
+            "¿Qué tan satisfecho está con el proceso de tratamiento en general?",
+            "¿Cómo calificaría la profesionalidad del personal clínico?",
+            "¿Fue clara y comprensible la información proporcionada antes del ensayo?",
+            "¿Fue conveniente la programación de las citas para usted?",
+            "¿Qué tan cómodas eran las instalaciones de la clínica?",
+            "¿Se abordaron sus inquietudes de manera oportuna?",
+            "¿Qué tan satisfecho está con la comunicación durante el ensayo?",
+            "¿Sintió que se respetó su privacidad durante el proceso?",
+            "¿Recomendaría participar en este ensayo a otras personas?"
+        ],
+        "comments": "¿Algún comentario o sugerencia adicional?",
+        "upload": "Suba su archivo JSON de la cuenta de servicio de Google",
+        "submit": "Enviar Comentarios",
+        "thanks": "✅ ¡Gracias! Sus comentarios han sido registrados.",
+        "no_file": "⚠️ Por favor, suba su archivo JSON de cuenta de servicio.",
+        "no_sheet": "⚠️ No se encontró la URL de la hoja de Google en los secretos.",
+        "error_sheet": "No se puede enviar la retroalimentación porque la hoja de Google no es accesible."
     },
     "German": {
-        "title": "Feedbackformular zur klinischen Studie",
-        "submit": "Absenden",
-        "success": "Vielen Dank für Ihr Feedback!",
-        "warning": "Bitte wählen Sie gültige Optionen für alle Fragen aus, bevor Sie absenden.",
-        "error": "Beim Speichern Ihres Feedbacks ist ein Fehler aufgetreten:",
-        "q1": "Haben Sie seit Ihrem letzten Besuch neue Symptome oder Veränderungen Ihrer Gesundheit bemerkt?",
-        "q1_desc": "Wenn ja, bitte beschreiben Sie:",
-        "q1_options": ["Ja", "Nein"],
-        "q2": "Sind die Nebenwirkungen im Laufe der Zeit besser oder schlechter zu bewältigen?",
-        "q2_options": ["Viel besser", "Etwas besser", "Keine Veränderung", "Etwas schlechter", "Viel schlechter"],
-        "q3": "Fühlen Sie sich während der Studie körperlich und emotional unterstützt?",
-        "q3_options": ["Stimme voll zu", "Stimme zu", "Neutral", "Stimme nicht zu", "Stimme überhaupt nicht zu"],
-        "q4": "Hat Ihre Teilnahme Ihre Fähigkeit beeinträchtigt, alltägliche Aufgaben diese Woche zu erledigen?",
-        "q4_options": ["Gar nicht", "Leicht", "Mäßig", "Deutlich", "Extrem"],
-        "q5": "Gab es bestimmte Aktivitäten, die Sie aufgrund der Studie vermeiden mussten?",
-        "q5_desc": "Wenn ja, bitte geben Sie diese an:",
-        "q5_options": ["Ja", "Nein"],
-        "q6": "Fühlen Sie sich ausreichend über bevorstehende Verfahren oder Besuche informiert?",
-        "q6_options": ["Sehr gut informiert", "Gut informiert", "Etwas informiert", "Schlecht informiert", "Gar nicht informiert"],
-        "q7": "Reagiert das Studienteam auf Ihre Fragen oder Anliegen?",
-        "q7_options": ["Immer", "Oft", "Manchmal", "Selten", "Nie"],
-        "q8": "Was motiviert Sie, weiterhin teilzunehmen? (Wählen Sie alle zutreffenden Optionen)",
-        "q8_options": ["Verbesserung der eigenen Gesundheit", "Beitrag zur Wissenschaft", "Unterstützung durch das Studienteam", "Finanzielle Entschädigung", "Sonstiges"],
-        "q8_other": "Sonstiges (bitte angeben):",
-        "q9": "Haben Sie jemals darüber nachgedacht, aus der Studie auszusteigen?",
-        "q9_desc": "Wenn ja, was hat Sie zum Weitermachen bewegt?",
-        "q9_options": ["Ja", "Nein"]
+        "title": "Feedbackformular zur Klinischen Studie",
+        "intro": "Bitte beantworten Sie die folgenden Fragen basierend auf Ihrer Erfahrung:",
+        "questions": [
+            "Wie zufrieden sind Sie mit dem gesamten Behandlungsprozess?",
+            "Wie bewerten Sie die Professionalität des klinischen Personals?",
+            "Waren die vor dem Versuch bereitgestellten Informationen klar und verständlich?",
+            "War die Terminplanung für Sie bequem?",
+            "Wie komfortabel waren die Klinikeinrichtungen?",
+            "Wurden Ihre Bedenken rechtzeitig berücksichtigt?",
+            "Wie zufrieden sind Sie mit der Kommunikation während der Studie?",
+            "Fühlten Sie sich während des Prozesses in Ihrer Privatsphäre respektiert?",
+            "Würden Sie die Teilnahme an dieser Studie anderen empfehlen?"
+        ],
+        "comments": "Weitere Kommentare oder Vorschläge?",
+        "upload": "Laden Sie Ihre Google-Servicekonto-JSON-Datei hoch",
+        "submit": "Feedback Absenden",
+        "thanks": "✅ Danke! Ihr Feedback wurde gespeichert.",
+        "no_file": "⚠️ Bitte laden Sie Ihre Servicekonto-JSON-Datei hoch.",
+        "no_sheet": "⚠️ Google-Sheet-URL wurde in den Secrets nicht gefunden.",
+        "error_sheet": "Feedback kann nicht gesendet werden, da das Google Sheet nicht zugänglich ist."
     }
 }
 
 t = translations[language]
 
-# -------------------------------
-# Session state initialization
-# -------------------------------
-question_keys = [
-    "new_symptoms", "new_symptoms_desc",
-    "side_effects_manageability",
-    "support_feeling",
-    "daily_tasks_impact",
-    "activities_avoided", "activities_avoided_desc",
-    "informed_about_procedures",
-    "team_responsiveness",
-    "motivation_factors", "motivation_other",
-]
-
-for key in question_keys:
-    if key not in st.session_state:
-        if key == "motivation_factors":
-            st.session_state[key] = []
-        elif "desc" in key or "reason" in key or "other" in key:
-            st.session_state[key] = ""
-        else:
-            st.session_state[key] = None
-
-# -------------------------------
-# Display questions
-# -------------------------------
+# UI Header
 st.title(t["title"])
-st.radio(t["q1"], t["q1_options"], key="new_symptoms")
-if st.session_state.new_symptoms == t["q1_options"][0]:
-    st.text_area(t["q1_desc"], key="new_symptoms_desc")
+st.markdown(t["intro"])
 
-st.radio(t["q2"], t["q2_options"], key="side_effects_manageability")
-st.radio(t["q3"], t["q3_options"], key="support_feeling")
-st.radio(t["q4"], t["q4_options"], key="daily_tasks_impact")
-st.radio(t["q5"], t["q5_options"], key="activities_avoided")
-if st.session_state.activities_avoided == t["q5_options"][0]:
-    st.text_area(t["q5_desc"], key="activities_avoided_desc")
+# Feedback Questions
+responses = []
+for i, q in enumerate(t["questions"], 1):
+    responses.append(st.slider(f"{i}. {q}", 1, 5, 3))
 
-st.radio(t["q6"], t["q6_options"], key="informed_about_procedures")
-st.radio(t["q7"], t["q7_options"], key="team_responsiveness")
-st.multiselect(t["q8"], t["q8_options"], key="motivation_factors")
-if any(opt in st.session_state.motivation_factors for opt in ["Other", "Otro", "Sonstiges"]):
-    st.text_input(t["q8_other"], key="motivation_other")
+comments = st.text_area(t["comments"])
 
-# -------------------------------
-# Google Sheets Setup with Debugging
-# -------------------------------
-try:
-    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+# JSON upload
+uploaded_file = st.file_uploader(t["upload"], type="json")
 
-    # Convert to normal dict safely
-    creds_dict = dict(st.secrets["google"])
-
-    # Fix private_key: convert literal "\n" to actual newlines
-    if "private_key" in creds_dict:
-        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    gc = gspread.authorize(creds)
-
-    sheet_name = "Feedback"
-    try:
-        sheet = gc.open(sheet_name).sheet1
-        st.success(f"✅ Google Sheet '{sheet_name}' opened successfully!")
-    except gspread.SpreadsheetNotFound:
-        st.error(f"❌ Spreadsheet '{sheet_name}' not found. Make sure it exists and is shared with the service account email.")
-        sheet = None
-
-except Exception as e:
-    st.error("❌ Error in Google Sheets setup or authorization:")
-    st.text(str(e))
-    st.text(traceback.format_exc())
-    sheet = None
-
-# -------------------------------
 # Submit button
-# -------------------------------
 if st.button(t["submit"]):
-    required_keys = [
-        "new_symptoms", "side_effects_manageability", "support_feeling",
-        "daily_tasks_impact", "activities_avoided", "informed_about_procedures",
-        "team_responsiveness", "motivation_factors"
-    ]
-    missing = [key for key in required_keys if st.session_state.get(key) in [None, ""]]
-
-    if missing:
-        st.warning(t["warning"])
+    if uploaded_file is None:
+        st.error(t["no_file"])
     else:
-        response = [
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            client,
-            treatment_code,
-            language,
-            st.session_state.new_symptoms,
-            st.session_state.new_symptoms_desc,
-            st.session_state.side_effects_manageability,
-            st.session_state.support_feeling,
-            st.session_state.daily_tasks_impact,
-            st.session_state.activities_avoided,
-            st.session_state.activities_avoided_desc,
-            st.session_state.informed_about_procedures,
-            st.session_state.team_responsiveness,
-            ", ".join(st.session_state.motivation_factors),
-            st.session_state.motivation_other
-        ]
+        try:
+            # Load credentials from uploaded JSON
+            creds_dict = json.load(uploaded_file)
+            scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+            creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+            client_g = gspread.authorize(creds)
 
-        if sheet:
-            try:
-                sheet.append_row(response)
-                st.session_state.feedback_submitted = True
+            # Google Sheet URL from secrets
+            sheet_url = st.secrets.get("sheet_url", "")
+            if not sheet_url:
+                st.error(t["no_sheet"])
+            else:
+                sheet = client_g.open_by_url(sheet_url).sheet1
 
-                # Clear session state
-                for key in question_keys:
-                    if key in st.session_state:
-                        del st.session_state[key]
+                # Prepare data row
+                row = [
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    client
+                ] + responses + [comments, treatment_code]
 
-                st.rerun()
+                # Append to sheet
+                sheet.append_row(row)
+                st.success(t["thanks"])
 
-            except Exception as e:
-                st.error(f"{t['error']} {e}")
-                st.text("Detailed traceback:")
-                st.text(traceback.format_exc())
-        else:
-            st.error("Cannot submit feedback because the Google Sheet is not accessible.")
-
-if st.session_state.get("feedback_submitted"):
-    st.success(t["success"])
-    del st.session_state["feedback_submitted"]
+        except Exception as e:
+            st.error(f"❌ Error in Google Sheets setup or authorization:\n\n{str(e)}")
