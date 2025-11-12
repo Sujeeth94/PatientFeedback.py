@@ -177,11 +177,11 @@ if st.button(t["submit"]):
         try:
             sheet.append_row(response)
             st.success(t["success"])
-                # ✅ Clear form inputs after successful submission
-                for key in list(st.session_state.keys()):
-                    if key not in ["language", "client"]:
-                        del st.session_state[key]
-                st.rerun()
+             # ✅ Clear form inputs after successful submission
+            for key in list(st.session_state.keys()):
+                if key not in ["language", "client"]:
+                    del st.session_state[key]
+            st.rerun()
 
         except Exception as e:
             st.error(f"{t['error']} {e}")
