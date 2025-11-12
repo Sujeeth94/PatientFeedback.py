@@ -177,10 +177,6 @@ if st.button(t["submit"]):
         try:
             sheet.append_row(response)
             st.success(t["success"])
-# Clear form selections after submit
-for key in list(st.session_state.keys()):
-    del st.session_state[key]
-st.rerun()
 
         except Exception as e:
             st.error(f"{t['error']} {e}")
