@@ -146,10 +146,6 @@ st.multiselect(t["q8"], t["q8_options"], key="motivation_factors")
 if any(opt in st.session_state.motivation_factors for opt in ["Other", "Otro", "Sonstiges"]):
     st.text_input(t["q8_other"], key="motivation_other")
 
-st.radio(t["q9"], t["q9_options"], key="considered_dropping")
-if st.session_state.considered_dropping == t["q9_options"][0]:
-    st.text_area(t["q9_desc"], key="considered_reason")
-
 # -------------------------------
 # Google Sheets setup
 # -------------------------------
