@@ -19,7 +19,7 @@ language = st.selectbox("Choose your language", ["English", "Spanish", "German"]
 # -------------------------------
 translations = {
     "English": {
-        "title": "Clinical Trial - Post-Trial Feedback",
+        "title": "Post Clinical Trial Feedback",
         "submit": "Submit",
         "success": "Thank you for your feedback!",
         "warning": "Please select valid options for all required questions before submitting.",
@@ -256,6 +256,7 @@ if st.button(t["submit"]):
         except Exception as e:
             st.error(f"{t['error']} {e}")
             st.text(traceback.format_exc())
+
 
 
 
