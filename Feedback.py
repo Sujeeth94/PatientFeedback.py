@@ -17,7 +17,7 @@ language = st.selectbox("Choose your language", ["English", "Spanish", "German"]
 
 translations = {
     "English": {
-        "title": "Clinical Trial Feedback Form",
+        "title": "Clinical Trials - On-Trial Feedback",
         "submit": "Submit",
         "success": "Thank you for your feedback!",
         "warning": "Please select valid options for all questions before submitting.",
@@ -44,7 +44,7 @@ translations = {
 
     },
     "Spanish": {
-        "title": "Formulario de Retroalimentación del Ensayo Clínico",
+        "title": "Ensayos Clínicos - Retroalimentación Durante el Ensayo",
         "submit": "Enviar",
         "success": "¡Gracias por su retroalimentación!",
         "warning": "Por favor seleccione opciones válidas para todas las preguntas antes de enviar.",
@@ -71,7 +71,7 @@ translations = {
 
     },
     "German": {
-        "title": "Feedbackformular zur klinischen Studie",
+        "title": "Klinische Studien - Feedback während des Versuchs",
         "submit": "Absenden",
         "success": "Vielen Dank für Ihr Feedback!",
         "warning": "Bitte wählen Sie gültige Optionen für alle Fragen aus, bevor Sie absenden.",
