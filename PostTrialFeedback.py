@@ -179,8 +179,8 @@ st.multiselect(t["q7"], t["q7_options"], key="q7")
 if any(opt in st.session_state.q7 for opt in ["Other", "Otro", "Sonstiges"]):
     st.text_input(t["q7_other"], key="q7_other")
 
-st.text_area(t["q8_desc"], key="q8_desc")
-st.text_area(t["q9_desc"], key="q9_desc")
+st.text_area(t["q8"], key="q8_desc")
+st.text_area(t["q9"], key="q9_desc")
 
 # -------------------------------
 # Google Sheets setup (Sheet2)
@@ -239,4 +239,5 @@ if st.button(t["submit"]):
         except Exception as e:
             st.error(f"{t['error']} {e}")
             st.text(traceback.format_exc())
+
 
