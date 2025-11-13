@@ -17,7 +17,7 @@ language = st.selectbox("Choose your language", ["English", "Spanish", "German"]
 
 translations = {
     "English": {
-        "title": "Clinical Trials - On-Trial Feedback",
+        "title": "Ongoing Clinical Trial Feedback",
         "submit": "Submit",
         "success": "Thank you for your feedback!",
         "warning": "Please select valid options for all questions before submitting.",
