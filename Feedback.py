@@ -41,9 +41,7 @@ translations = {
         "q8": "What keeps you motivated to continue participating? (Select all that apply)",
         "q8_options": ["Personal health improvement", "Contribution to science", "Support from study staff", "Financial compensation", "Other"],
         "q8_other": "Other (please specify):",
-        "q9": "Have you considered dropping out at any point?",
-        "q9_desc": "If yes, what made you reconsider?",
-        "q9_options": ["Yes", "No"]
+
     },
     "Spanish": {
         "title": "Formulario de Retroalimentación del Ensayo Clínico",
@@ -70,9 +68,7 @@ translations = {
         "q8": "¿Qué le motiva a seguir participando? (Seleccione todas las que correspondan)",
         "q8_options": ["Mejora de la salud personal", "Contribución a la ciencia", "Apoyo del personal del estudio", "Compensación económica", "Otro"],
         "q8_other": "Otro (por favor especifique):",
-        "q9": "¿Ha considerado abandonar el estudio en algún momento?",
-        "q9_desc": "Si es así, ¿qué le hizo reconsiderarlo?",
-        "q9_options": ["Sí", "No"]
+
     },
     "German": {
         "title": "Feedbackformular zur klinischen Studie",
@@ -99,9 +95,7 @@ translations = {
         "q8": "Was motiviert Sie, weiterhin teilzunehmen? (Wählen Sie alle zutreffenden Optionen)",
         "q8_options": ["Verbesserung der eigenen Gesundheit", "Beitrag zur Wissenschaft", "Unterstützung durch das Studienteam", "Finanzielle Entschädigung", "Sonstiges"],
         "q8_other": "Sonstiges (bitte angeben):",
-        "q9": "Haben Sie jemals darüber nachgedacht, aus der Studie auszusteigen?",
-        "q9_desc": "Wenn ja, was hat Sie zum Weitermachen bewegt?",
-        "q9_options": ["Ja", "Nein"]
+
     }
 }
 
@@ -118,8 +112,7 @@ question_keys = [
     "activities_avoided", "activities_avoided_desc",
     "informed_about_procedures",
     "team_responsiveness",
-    "motivation_factors", "motivation_other",
-    "considered_dropping", "considered_reason"
+    "motivation_factors", "motivation_other"
 ]
 
 for key in question_keys:
@@ -196,9 +189,7 @@ if st.button(t["submit"]):
             st.session_state.informed_about_procedures,
             st.session_state.team_responsiveness,
             ", ".join(st.session_state.motivation_factors),
-            st.session_state.get("motivation_other", ""),
-            st.session_state.considered_dropping,
-            st.session_state.get("considered_reason", "")
+            st.session_state.get("motivation_other", "")
         ]
 
         try:
