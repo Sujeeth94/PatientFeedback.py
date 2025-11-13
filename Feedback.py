@@ -167,7 +167,7 @@ if st.button(t["submit"]):
     required_keys = [
         "new_symptoms", "side_effects_manageability", "support_feeling",
         "daily_tasks_impact", "activities_avoided", "informed_about_procedures",
-        "team_responsiveness", "motivation_factors", "considered_dropping"
+        "team_responsiveness", "motivation_factors"
     ]
     missing = [k for k in required_keys if st.session_state.get(k) in [None, "", []]]
 
