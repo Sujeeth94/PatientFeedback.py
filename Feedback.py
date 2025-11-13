@@ -153,7 +153,7 @@ try:
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
     creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
     gc = gspread.authorize(creds)
-    sheet = gc.open_by_url(st.secrets["sheet"]["url"]).sheet1
+    sheet = gc.open_by_url(st.secrets["sheet"]["url"])."On-Trial"
 except Exception as e:
     st.error("❌ Error in Google Sheets setup or authorization:")
     st.text(str(e))
