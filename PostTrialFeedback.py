@@ -19,7 +19,7 @@ language = st.selectbox("Choose your language", ["English", "Spanish", "German"]
 # -------------------------------
 translations = {
     "English": {
-        "title": "Post-Trial Feedback Form",
+        "title": "Clinical Trial - Post-Trial Feedback",
         "submit": "Submit",
         "success": "Thank you for your feedback!",
         "warning": "Please select valid options for all required questions before submitting.",
@@ -57,7 +57,7 @@ translations = {
         "q9_desc": "Open-ended:"
     },
     "Spanish": {
-        "title": "Formulario de Retroalimentación Post-Estudio",
+        "title": "Ensayo Clínico - Retroalimentación Post-Estudio",
         "submit": "Enviar",
         "success": "¡Gracias por su retroalimentación!",
         "warning": "Por favor seleccione opciones válidas para todas las preguntas obligatorias antes de enviar.",
@@ -95,7 +95,7 @@ translations = {
         "q9_desc": "Abierto:"
     },
     "German": {
-        "title": "Feedbackformular Post-Studie",
+        "title": "Klinische Studie - Feedback nach Abschluss",
         "submit": "Absenden",
         "success": "Vielen Dank für Ihr Feedback!",
         "warning": "Bitte wählen Sie gültige Optionen für alle erforderlichen Fragen aus, bevor Sie absenden.",
@@ -256,6 +256,7 @@ if st.button(t["submit"]):
         except Exception as e:
             st.error(f"{t['error']} {e}")
             st.text(traceback.format_exc())
+
 
 
 
