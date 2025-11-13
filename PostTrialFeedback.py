@@ -197,6 +197,23 @@ except Exception as e:
     sheet = None
 
 # -------------------------------
+# Add headers to Sheet2 if empty
+# -------------------------------
+if sheet:
+    headers = [
+        "Timestamp", "Participant ID / Code", "Language",
+        "Overall Experience", "Valuable Aspects", "Valuable Aspects - Other",
+        "Lasting Effects", "Lasting Effects - Description",
+        "Considered Dropping Out", "Considered Dropping Out - Description",
+        "Study Influence on Perspective", "Recommendation Likelihood",
+        "Future Participation Encouragement", "Future Participation Encouragement - Other",
+        "Suggested Improvements", "Memorable Moments"
+    ]
+    # Check if sheet is empty (first row)
+    if sheet.row_count == 0 or sheet.row_values(1) == []:
+        sheet.append_row(headers)
+
+# -------------------------------
 # Submit button
 # -------------------------------
 if st.button(t["submit"]):
@@ -239,5 +256,6 @@ if st.button(t["submit"]):
         except Exception as e:
             st.error(f"{t['error']} {e}")
             st.text(traceback.format_exc())
+
 
 
